@@ -1,0 +1,10 @@
+/node_modules
+/_optimize
+/.serverless
+/.build
+/.webpack
+/npm-debug.log
+.DS_Store
+.package-lock.json
+.DS_Store?
+yarn-error.log

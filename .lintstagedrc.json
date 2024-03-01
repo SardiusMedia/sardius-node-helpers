@@ -1,0 +1,7 @@
+{
+  "*.{js,ts}": [
+    "yarn run lint",
+    "yarn run format",
+    "yarn run test-staged"
+  ]
+}
