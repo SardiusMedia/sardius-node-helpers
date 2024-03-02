@@ -1,5 +1,5 @@
 import db from './db';
-import Dynamo from '../index';
+import Dynamo from '../Dynamo/index';
 
 export type Schemas = 'primary'; // Update based on schemas from db.ts
 

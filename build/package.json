@@ -1,16 +1,8 @@
 {
-  "name": "sardius-node-helpers-wrapper",
-  "version": "1.0.0",
-  "description": "Has all the needed config files to run the typescript",
-  "scripts": {
-    "prepare": "husky install",
-    "format": "prettier --write src/",
-    "lint": "eslint . --ext .ts --fix",
-    "test": "jest --no-cache",
-    "test-staged": "jest --passWithNoTests --findRelatedTests",
-    "coverage": "jest --coverage",
-    "build": "npx tsc src/index.ts src/helpers/*.ts src/Dynamo/*.ts src/s3/*.ts --esModuleInterop --outDir build --declaration"
-  },
+  "name": "sardius-node-helpers",
+  "version": "1.0.5",
+  "description": "Common functions and wrappers used in Sardius APIs",
+  "scripts": {},
   "license": "MIT",
   "repository": {
     "type": "git",

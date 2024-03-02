@@ -1,6 +1,4 @@
-import KeyValueAny from '../tsModels/keyValueAny';
-import invokeLambda from './invokeLambda';
-
+import KeyValueAny from '../common/tsModels/keyValueAny';
 interface Account {
   access: string[];
   accountManager: boolean;
@@ -54,14 +52,5 @@ interface Account {
   trial: number;
   youbora: KeyValueAny;
 }
-
-const getAccount = async (accountId: string): Promise<Account> => {
-  // Fetch account
-  const account = await invokeLambda('accounts', 'getAccount', {
-    pathParameters: { accountId },
-  });
-
-  return account as Account;
-};
-
+declare const getAccount: (accountId: string) => Promise<Account>;
 export default getAccount;

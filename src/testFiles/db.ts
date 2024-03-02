@@ -3,7 +3,7 @@ import { DynamoDBClient, DynamoDBClientConfig } from '@aws-sdk/client-dynamodb';
 
 import Joi from 'joi';
 
-import { DynamoDbTable, Schema } from '../index.types';
+import { DynamoDbTable, Schema } from '../Dynamo/index.types';
 
 const dbClientConfig: DynamoDBClientConfig = {
   region: 'us-east-1',
