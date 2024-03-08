@@ -390,7 +390,7 @@ class DynamoWrapper {
       validOptions.Limit = options.limit;
     }
 
-    if (options && options.filters) {
+    if (options && options.filters && options.filters.length > 0) {
       validOptions.ExpressionAttributeNames = {};
       validOptions.ExpressionAttributeValues = {};
       const filterExpressions: string[] = [];

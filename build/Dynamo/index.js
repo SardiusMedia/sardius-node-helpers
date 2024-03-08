@@ -512,7 +512,7 @@ var DynamoWrapper = /** @class */ (function () {
     if (options && options.limit) {
       validOptions.Limit = options.limit;
     }
-    if (options && options.filters) {
+    if (options && options.filters && options.filters.length > 0) {
       validOptions.ExpressionAttributeNames = {};
       validOptions.ExpressionAttributeValues = {};
       var filterExpressions_1 = [];
