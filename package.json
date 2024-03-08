@@ -9,7 +9,8 @@
     "test": "jest --no-cache",
     "test-staged": "jest --passWithNoTests --findRelatedTests",
     "coverage": "jest --coverage",
-    "build": "npx tsc src/index.ts src/helpers/*.ts src/Dynamo/*.ts src/s3/*.ts --esModuleInterop --outDir build --declaration"
+    "build": "npx tsc src/index.ts src/helpers/*.ts src/Dynamo/*.ts src/s3/*.ts --esModuleInterop --outDir build --declaration",
+    "formatBuild": "prettier --write build/"
   },
   "license": "MIT",
   "repository": {

@@ -361,6 +361,16 @@ describe('repositories/Dynamo/index', () => {
     expect(result13).toMatchSnapshot('Descending');
   });
 
+  it('query options empty filter array works', async () => {
+    const db = new Dynamo('primary');
+
+    // Limit
+    const result = await db.query('pk_batchKey', undefined, {
+      filters: [],
+    });
+    expect(result).toMatchSnapshot('Empty Filter');
+  });
+
   it('loadAllWorks', async () => {
     const db = new Dynamo('primary');
 
