@@ -7,14 +7,16 @@ import getStage from './helpers/getStage';
 import invokeLambda from './helpers/invokeLambda';
 import sendSlack from './helpers/sendSlack';
 import sleep from './helpers/sleep';
+import stepFunctionHelpers from './helpers/stepFunctionHelpers';
 export {
-  getAccount,
+  DynamoWrapper,
+  DynamoWrapperTypes,
+  S3Wrapper,
   getAWSSecrets,
+  getAccount,
   getStage,
   invokeLambda,
   sendSlack,
   sleep,
-  DynamoWrapper,
-  DynamoWrapperTypes,
-  S3Wrapper,
+  stepFunctionHelpers,
 };
