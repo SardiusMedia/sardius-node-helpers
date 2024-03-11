@@ -5,6 +5,6 @@ declare const _default: (
   serviceId: string,
   title: string,
   message: Message,
-  type: string,
+  type: 'danger' | 'warning' | 'good',
 ) => Promise<void>;
 export default _default;

@@ -8,7 +8,7 @@ export default async (
   serviceId: string,
   title: string,
   message: Message,
-  type: string,
+  type: 'danger' | 'warning' | 'good',
 ): Promise<void> => {
   try {
     await axios({

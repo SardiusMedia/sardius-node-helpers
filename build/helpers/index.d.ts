@@ -3,4 +3,12 @@ import getAWSSecrets from './getAWSSecrets';
 import getStage from './getStage';
 import invokeLambda from './invokeLambda';
 import sendSlack from './sendSlack';
-export { getAccount, getAWSSecrets, getStage, invokeLambda, sendSlack };
+import stepFunctionHelpers from './stepFunctionHelpers';
+export {
+  getAccount,
+  getAWSSecrets,
+  getStage,
+  invokeLambda,
+  sendSlack,
+  stepFunctionHelpers,
+};
