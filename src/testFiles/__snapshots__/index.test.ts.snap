@@ -1,5 +1,27 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`repositories/Dynamo/index Nested Object Filters Works 1`] = `
+{
+  "Count": 1,
+  "Items": [
+    {
+      "gsi1": "gsi1_nestedKey1",
+      "key4": {
+        "key1": {
+          "key2": {
+            "key3": "abc",
+          },
+        },
+      },
+      "pk": "pk_nestedKey1",
+      "sk": "sk_nestedKey1",
+    },
+  ],
+  "LastEvaluatedKey": undefined,
+  "ScannedCount": 1,
+}
+`;
+
 exports[`repositories/Dynamo/index batch create works 1`] = `
 {
   "Count": 25,

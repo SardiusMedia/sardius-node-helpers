@@ -415,9 +415,9 @@ class DynamoWrapper {
           validOptions.ExpressionAttributeNames &&
           validOptions.ExpressionAttributeValues
         ) {
-          const key = `#${filter.key}`;
-          const valueKey = `:${filter.key}`;
-          const valueKey2 = `:${filter.key}2`;
+          let key = `#${filter.key}`;
+          let valueKey = `:${filter.key}`;
+          let valueKey2 = `:${filter.key}2`;
 
           const noValueOperations = [
             'exist',
@@ -427,7 +427,37 @@ class DynamoWrapper {
             null,
           ];
 
-          validOptions.ExpressionAttributeNames[key] = filter.key;
+          // If we have a . in the key name, then that means
+          // we are attempting to filter on a nested object
+          // so we have to do some special logic to break out
+          // that key in the correct way for Dynamo
+          if (filter.key.indexOf('.') > -1) {
+            // Split the keys by the . so we can process them
+            const splitKeys = filter.key.split('.');
+
+            // We have to add a unique key for each splitKey
+            splitKeys.forEach(splitKey => {
+              if (validOptions.ExpressionAttributeNames) {
+                validOptions.ExpressionAttributeNames[`#${splitKey}`] =
+                  splitKey;
+              }
+            });
+
+            // Format the keys to have the # in front
+            const splitKeysFormatted = splitKeys.map(
+              splitKey => `#${splitKey}`,
+            );
+
+            // Join the keys back together so its nested again
+            key = splitKeysFormatted.join('.');
+
+            // Update our value keys to only use the first key
+            // since Dynamo doesn't like . in those valueKey names
+            valueKey = `:${splitKeys[0]}`;
+            valueKey2 = `:${splitKeys[0]}2`;
+          } else {
+            validOptions.ExpressionAttributeNames[key] = filter.key;
+          }
 
           if (noValueOperations.indexOf(filter.operation) === -1) {
             validOptions.ExpressionAttributeValues[valueKey] = cleanItem.value;

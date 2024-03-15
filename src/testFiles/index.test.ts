@@ -444,6 +444,36 @@ describe('repositories/Dynamo/index', () => {
     expect(results).toMatchSnapshot();
   });
 
+  it('Nested Object Filters Works', async () => {
+    const db = new Dynamo('primary');
+
+    await db.create({
+      pk: `pk_nestedKey1`,
+      sk: `sk_nestedKey1`,
+      gsi1: `gsi1_nestedKey1`,
+      key4: {
+        key1: {
+          key2: {
+            key3: 'abc',
+          },
+        },
+      },
+    });
+
+    const results = await db.query('pk_nestedKey1', undefined, {
+      filters: [
+        {
+          key: 'key4.key1.key2.key3',
+          operation: '=',
+          value: 'abc',
+        },
+      ],
+    });
+
+    expect(results.Items.length).toEqual(1);
+    expect(results).toMatchSnapshot();
+  });
+
   it('remove works', async () => {
     const db = new Dynamo('primary');
 

@@ -540,7 +540,33 @@ var DynamoWrapper = /** @class */ (function () {
             'notExists',
             null,
           ];
-          validOptions.ExpressionAttributeNames[key] = filter.key;
+          // If we have a . in the key name, then that means
+          // we are attempting to filter on a nested object
+          // so we have to do some special logic to break out
+          // that key in the correct way for Dynamo
+          if (filter.key.indexOf('.') > -1) {
+            // Split the keys by the . so we can process them
+            var splitKeys = filter.key.split('.');
+            // We have to add a unique key for each splitKey
+            splitKeys.forEach(function (splitKey) {
+              if (validOptions.ExpressionAttributeNames) {
+                validOptions.ExpressionAttributeNames['#'.concat(splitKey)] =
+                  splitKey;
+              }
+            });
+            // Format the keys to have the # in front
+            var splitKeysFormatted = splitKeys.map(function (splitKey) {
+              return '#'.concat(splitKey);
+            });
+            // Join the keys back together so its nested again
+            key = splitKeysFormatted.join('.');
+            // Update our value keys to only use the first key
+            // since Dynamo doesn't like . in those valueKey names
+            valueKey = ':'.concat(splitKeys[0]);
+            valueKey2 = ':'.concat(splitKeys[0], '2');
+          } else {
+            validOptions.ExpressionAttributeNames[key] = filter.key;
+          }
           if (noValueOperations.indexOf(filter.operation) === -1) {
             validOptions.ExpressionAttributeValues[valueKey] = cleanItem.value;
             if (filter.value2 !== undefined && filter.operation === 'between') {
