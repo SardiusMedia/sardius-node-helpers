@@ -49,6 +49,7 @@ const primarySchema = {
   key1: Joi.string(),
   key2: Joi.string(),
   key3: Joi.boolean(),
+  key4: Joi.object(),
 };
 
 const primary: Schema = {
