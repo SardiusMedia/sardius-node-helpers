@@ -1,6 +1,6 @@
 import { createTables, deleteTables } from 'jest-dynalite';
 
-import Dynamo from './index';
+import Dynamo from './dynamo';
 
 // Each test in this builds upon the previous one. For example
 // the update test will update the items created by the create test.
@@ -369,6 +369,24 @@ describe('repositories/Dynamo/index', () => {
       filters: [],
     });
     expect(result).toMatchSnapshot('Empty Filter');
+  });
+
+  it('query options attributes and filter works', async () => {
+    const db = new Dynamo('primary');
+
+    // Limit
+    const result = await db.query('pk_batchKey', undefined, {
+      filters: [
+        {
+          key: 'key1',
+          operation: '<',
+          value: 'key1_batchKey_15',
+        },
+      ],
+      attributes: ['key1'],
+    });
+
+    expect(result).toMatchSnapshot();
   });
 
   it('loadAllWorks', async () => {

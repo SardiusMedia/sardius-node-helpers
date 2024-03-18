@@ -234,6 +234,37 @@ exports[`repositories/Dynamo/index exactLimit Works 1`] = `
 }
 `;
 
+exports[`repositories/Dynamo/index query options attributes and filter works 1`] = `
+{
+  "Count": 7,
+  "Items": [
+    {
+      "key1": "key1_batchKey_0",
+    },
+    {
+      "key1": "key1_batchKey_1",
+    },
+    {
+      "key1": "key1_batchKey_10",
+    },
+    {
+      "key1": "key1_batchKey_11",
+    },
+    {
+      "key1": "key1_batchKey_12",
+    },
+    {
+      "key1": "key1_batchKey_13",
+    },
+    {
+      "key1": "key1_batchKey_14",
+    },
+  ],
+  "LastEvaluatedKey": undefined,
+  "ScannedCount": 25,
+}
+`;
+
 exports[`repositories/Dynamo/index query options empty filter array works: Empty Filter 1`] = `
 {
   "Count": 25,
