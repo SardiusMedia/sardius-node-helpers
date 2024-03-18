@@ -361,6 +361,24 @@ class DynamoWrapper {
       ScannedCount: response.ScannedCount,
     };
 
+    if (
+      options?.attributes &&
+      options?.filters &&
+      options?.filters.length > 0
+    ) {
+      formattedResponse.Items = formattedResponse.Items.map(item => {
+        const fullItem: any = {};
+
+        options?.attributes?.forEach((key: string) => {
+          if (item[key] !== undefined) {
+            fullItem[key] = item[key];
+          }
+        });
+
+        return fullItem;
+      });
+    }
+
     return formattedResponse;
   }
 
@@ -381,10 +399,6 @@ class DynamoWrapper {
 
   private processOptions(options?: Options): Partial<QueryCommandInput> {
     const validOptions: Partial<QueryCommandInput> = {};
-
-    if (options?.attributes) {
-      validOptions.AttributesToGet = options.attributes;
-    }
 
     if (options && options.limit) {
       validOptions.Limit = options.limit;
@@ -487,6 +501,14 @@ class DynamoWrapper {
       }
 
       validOptions.FilterExpression = filterExpressions.join(' AND ');
+    }
+
+    if (options?.attributes) {
+      if (options && options.filters && options.filters.length > 0) {
+        // Do nothing
+      } else {
+        validOptions.AttributesToGet = options.attributes;
+      }
     }
 
     if (options && options.startKey) {
