@@ -248,6 +248,10 @@ var DynamoWrapper = /** @class */ (function () {
     this.sk = schema.table.rangeKey;
     this.model = schema.table;
     this.schema = schema.schema;
+    this.timestamps =
+      this.model.timestamps ||
+      (process.env.MOCK_DYNAMODB_ENDPOINT !== undefined &&
+        process.env.useTimestamps === 'true');
     this.indexesByName = {};
     this.indexNames = schema.table.indexes.map(function (index) {
       return index.name;
@@ -688,13 +692,13 @@ var DynamoWrapper = /** @class */ (function () {
       }
       // Since increment functions are ran on a number field
       // we cant let an object pass for those fields, so we pull
-      // them out into a seperate field for processing later
+      // them out into a separate field for processing later
       if (value && value['$add']) {
         formattedData.incrementValues.push(key);
         formattedData[key] = value['$add'];
       }
     });
-    if (this.model.timestamps) {
+    if (this.timestamps) {
       if (method === 'create') {
         formattedData.createdAt = new Date().toISOString();
       } else if (method === 'update') {
@@ -741,10 +745,11 @@ var DynamoWrapper = /** @class */ (function () {
         }
       });
     }
-    if (this.model.timestamps) {
+    if (this.timestamps) {
       if (method === 'create') {
         schema.createdAt = joi_1.default.string();
       } else if (method === 'update') {
+        schema.createdAt = joi_1.default.string();
         schema.updatedAt = joi_1.default.string();
       }
     }

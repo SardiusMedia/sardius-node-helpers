@@ -15,6 +15,7 @@ declare class DynamoWrapper {
   model: DynamoDbTable;
   schema: Record<string, Joi.Schema>;
   indexNames: string[];
+  timestamps: boolean;
   private mainIndex;
   private indexesByName;
   constructor(dbClient: DynamoDBClient, schema: Schema);
