@@ -484,6 +484,35 @@ var DynamoWrapper = /** @class */ (function () {
                 : undefined,
               ScannedCount: response.ScannedCount,
             };
+            if (
+              (options === null || options === void 0
+                ? void 0
+                : options.attributes) &&
+              (options === null || options === void 0
+                ? void 0
+                : options.filters) &&
+              (options === null || options === void 0
+                ? void 0
+                : options.filters.length) > 0
+            ) {
+              formattedResponse.Items = formattedResponse.Items.map(
+                function (item) {
+                  var _a;
+                  var fullItem = {};
+                  (_a =
+                    options === null || options === void 0
+                      ? void 0
+                      : options.attributes) === null || _a === void 0
+                    ? void 0
+                    : _a.forEach(function (key) {
+                        if (item[key] !== undefined) {
+                          fullItem[key] = item[key];
+                        }
+                      });
+                  return fullItem;
+                },
+              );
+            }
             return [2 /*return*/, formattedResponse];
         }
       });
@@ -506,9 +535,6 @@ var DynamoWrapper = /** @class */ (function () {
   DynamoWrapper.prototype.processOptions = function (options) {
     var _a;
     var validOptions = {};
-    if (options === null || options === void 0 ? void 0 : options.attributes) {
-      validOptions.AttributesToGet = options.attributes;
-    }
     if (options && options.limit) {
       validOptions.Limit = options.limit;
     }
@@ -591,6 +617,13 @@ var DynamoWrapper = /** @class */ (function () {
         delete validOptions.ExpressionAttributeValues;
       }
       validOptions.FilterExpression = filterExpressions_1.join(' AND ');
+    }
+    if (options === null || options === void 0 ? void 0 : options.attributes) {
+      if (options && options.filters && options.filters.length > 0) {
+        // Do nothing
+      } else {
+        validOptions.AttributesToGet = options.attributes;
+      }
     }
     if (options && options.startKey) {
       if (typeof options.startKey === 'string') {
