@@ -161,16 +161,13 @@ class DynamoWrapper {
     [key: string]: Index;
   };
 
-  constructor(dbClient: DynamoDBClient, schema: Schema) {
+  constructor(dbClient: DynamoDBClient, schema: Schema, timestamps?: boolean) {
     this.mainIndex = dbClient;
     this.pk = schema.table.hashKey;
     this.sk = schema.table.rangeKey;
     this.model = schema.table;
     this.schema = schema.schema;
-    this.timestamps =
-      this.model.timestamps ||
-      (process.env.MOCK_DYNAMODB_ENDPOINT !== undefined &&
-        process.env.useTimestamps === 'true');
+    this.timestamps = timestamps || this.model.timestamps;
 
     this.indexesByName = {};
     this.indexNames = schema.table.indexes.map((index: Index) => index.name);

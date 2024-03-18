@@ -242,16 +242,13 @@ var convertOperationToExpression = function (key, operation, value, value2) {
   throw Error('Invalid operation');
 };
 var DynamoWrapper = /** @class */ (function () {
-  function DynamoWrapper(dbClient, schema) {
+  function DynamoWrapper(dbClient, schema, timestamps) {
     this.mainIndex = dbClient;
     this.pk = schema.table.hashKey;
     this.sk = schema.table.rangeKey;
     this.model = schema.table;
     this.schema = schema.schema;
-    this.timestamps =
-      this.model.timestamps ||
-      (process.env.MOCK_DYNAMODB_ENDPOINT !== undefined &&
-        process.env.useTimestamps === 'true');
+    this.timestamps = timestamps || this.model.timestamps;
     this.indexesByName = {};
     this.indexNames = schema.table.indexes.map(function (index) {
       return index.name;

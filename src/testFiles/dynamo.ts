@@ -6,11 +6,11 @@ export type Schemas = 'primary'; // Update based on schemas from db.ts
 export type IndexNames = 'sk-pk-index' | 'gsi1-sk-index'; // Replace with actual index names
 
 export default class DynamoWrapper extends Dynamo {
-  constructor(schema: Schemas) {
+  constructor(schema: Schemas, timestamps?: boolean) {
     if (!db[schema]) {
       throw Error('Invalid schema');
     }
 
-    super(db.dbClient, db[schema]);
+    super(db.dbClient, db[schema], timestamps);
   }
 }

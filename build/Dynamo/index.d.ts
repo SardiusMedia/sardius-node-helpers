@@ -18,7 +18,7 @@ declare class DynamoWrapper {
   timestamps: boolean;
   private mainIndex;
   private indexesByName;
-  constructor(dbClient: DynamoDBClient, schema: Schema);
+  constructor(dbClient: DynamoDBClient, schema: Schema, timestamps?: boolean);
   private buildQuery;
   loadAll(
     pk: Pk,
