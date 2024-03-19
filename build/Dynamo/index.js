@@ -242,13 +242,15 @@ var convertOperationToExpression = function (key, operation, value, value2) {
   throw Error('Invalid operation');
 };
 var DynamoWrapper = /** @class */ (function () {
-  function DynamoWrapper(dbClient, schema, timestamps) {
+  function DynamoWrapper(dbClient, schema, options) {
     this.mainIndex = dbClient;
     this.pk = schema.table.hashKey;
     this.sk = schema.table.rangeKey;
     this.model = schema.table;
     this.schema = schema.schema;
-    this.timestamps = timestamps || this.model.timestamps;
+    this.timestamps =
+      (options === null || options === void 0 ? void 0 : options.timestamps) ||
+      this.model.timestamps;
     this.indexesByName = {};
     this.indexNames = schema.table.indexes.map(function (index) {
       return index.name;

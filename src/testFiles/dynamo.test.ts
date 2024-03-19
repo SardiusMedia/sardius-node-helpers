@@ -149,7 +149,7 @@ describe('repositories/Dynamo/index', () => {
   });
 
   it('update should allow createdAt on the schema', async () => {
-    const db = new Dynamo('primary', true);
+    const db = new Dynamo('primary', { timestamps: true });
 
     // Purposely do not include gsi1 to prove we can update without
     // needing a required field from Joi

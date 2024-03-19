@@ -107,3 +107,7 @@ export interface Options {
   startKey?: Pk | { [key: string]: Pk };
   exactLimit?: number;
 }
+
+export interface DBSetupOptions {
+  timestamps?: boolean;
+}

@@ -29,6 +29,7 @@ import {
   Operations,
   Filter,
   FilterOperations,
+  DBSetupOptions,
 } from './index.types';
 
 import sleep from '../helpers/sleep';
@@ -161,13 +162,17 @@ class DynamoWrapper {
     [key: string]: Index;
   };
 
-  constructor(dbClient: DynamoDBClient, schema: Schema, timestamps?: boolean) {
+  constructor(
+    dbClient: DynamoDBClient,
+    schema: Schema,
+    options?: DBSetupOptions,
+  ) {
     this.mainIndex = dbClient;
     this.pk = schema.table.hashKey;
     this.sk = schema.table.rangeKey;
     this.model = schema.table;
     this.schema = schema.schema;
-    this.timestamps = timestamps || this.model.timestamps;
+    this.timestamps = options?.timestamps || this.model.timestamps;
 
     this.indexesByName = {};
     this.indexNames = schema.table.indexes.map((index: Index) => index.name);
