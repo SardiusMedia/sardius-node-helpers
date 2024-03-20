@@ -427,6 +427,18 @@ describe('repositories/Dynamo/index', () => {
       sort: 'descending',
     });
     expect(result13).toMatchSnapshot('Descending');
+
+    // Not Contains
+    const result14 = await db.query('pk_batchKey', undefined, {
+      filters: [
+        {
+          key: 'key1',
+          operation: 'notContains',
+          value: '_1',
+        },
+      ],
+    });
+    expect(result14).toMatchSnapshot('Not Contains');
   });
 
   it('query options empty filter array works', async () => {
@@ -558,6 +570,94 @@ describe('repositories/Dynamo/index', () => {
 
     expect(results.Items.length).toEqual(1);
     expect(results).toMatchSnapshot();
+  });
+
+  it('Filters supports OR operation', async () => {
+    const db = new Dynamo('primary');
+
+    await db.create({
+      pk: 'pk_orKey1',
+      sk: 'sk_orKey1',
+      gsi1: 'gsi1_orKey1',
+      key5: ['value1', 'value2'],
+    });
+
+    await db.create({
+      pk: 'pk_orKey1',
+      sk: 'sk_orKey2',
+      gsi1: 'gsi1_orKey2',
+      key5: ['value3', 'value4'],
+    });
+
+    await db.create({
+      pk: 'pk_orKey1',
+      sk: 'sk_orKey3',
+      gsi1: 'gsi1_orKey3',
+      key5: ['value5', 'value6'],
+    });
+
+    const result = await db.query('pk_orKey1', undefined, {
+      filters: [
+        {
+          key: 'key5',
+          operation: 'contains',
+          value: 'value1',
+        },
+        {
+          key: 'key5',
+          operation: 'contains',
+          value: 'value3',
+        },
+      ],
+      filtersOperation: 'OR',
+    });
+
+    expect(result.Items.length).toEqual(2);
+    expect(result).toMatchSnapshot();
+  });
+
+  it('Filters supports AND operation', async () => {
+    const db = new Dynamo('primary');
+
+    await db.create({
+      pk: 'pk_orKey2',
+      sk: 'sk_orKey1',
+      gsi1: 'gsi1_orKey1',
+      key5: ['value1', 'value2'],
+    });
+
+    await db.create({
+      pk: 'pk_orKey2',
+      sk: 'sk_orKey2',
+      gsi1: 'gsi1_orKey2',
+      key5: ['value1', 'value4'],
+    });
+
+    await db.create({
+      pk: 'pk_orKey2',
+      sk: 'sk_orKey3',
+      gsi1: 'gsi1_orKey3',
+      key5: ['value1', 'value6'],
+    });
+
+    const result = await db.query('pk_orKey2', undefined, {
+      filters: [
+        {
+          key: 'key5',
+          operation: 'contains',
+          value: 'value1',
+        },
+        {
+          key: 'key5',
+          operation: 'contains',
+          value: 'value2',
+        },
+      ],
+      filtersOperation: 'AND',
+    });
+
+    expect(result.Items.length).toEqual(1);
+    expect(result).toMatchSnapshot();
   });
 
   it('remove works', async () => {

@@ -75,6 +75,10 @@ const convertOperation = (
     return 'CONTAINS';
   }
 
+  if (operation === 'notContains') {
+    return 'NOT_CONTAINS';
+  }
+
   if (operation === 'exist' || operation === 'exists') {
     return 'NOT_NULL';
   }
@@ -137,6 +141,10 @@ const convertOperationToExpression = (
 
   if (operation === 'contains') {
     return `contains(${key}, ${value})`;
+  }
+
+  if (operation === 'notContains') {
+    return `not contains(${key}, ${value})`;
   }
 
   if (operation === 'exist' || operation === 'exists') {
@@ -417,7 +425,7 @@ class DynamoWrapper {
       validOptions.ExpressionAttributeValues = {};
       const filterExpressions: string[] = [];
 
-      options.filters.forEach(filter => {
+      options.filters.forEach((filter, index) => {
         const attribute: { value: Filter['value']; value2?: Filter['value2'] } =
           { value: filter.value };
 
@@ -437,9 +445,9 @@ class DynamoWrapper {
           validOptions.ExpressionAttributeNames &&
           validOptions.ExpressionAttributeValues
         ) {
-          let key = `#${filter.key}`;
-          let valueKey = `:${filter.key}`;
-          let valueKey2 = `:${filter.key}2`;
+          let key = `#${index}${filter.key}`;
+          let valueKey = `:${index}${filter.key}`;
+          let valueKey2 = `:${index}${filter.key}2`;
 
           const noValueOperations = [
             'exist',
@@ -508,7 +516,9 @@ class DynamoWrapper {
         delete validOptions.ExpressionAttributeValues;
       }
 
-      validOptions.FilterExpression = filterExpressions.join(' AND ');
+      const operation = options.filtersOperation || 'AND';
+
+      validOptions.FilterExpression = filterExpressions.join(` ${operation} `);
     }
 
     if (options?.attributes) {
