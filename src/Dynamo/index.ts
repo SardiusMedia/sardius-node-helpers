@@ -586,11 +586,17 @@ class DynamoWrapper {
       if (value === '') {
         if (method === 'create') {
           delete formattedData[key];
+        }
+      }
+
+      if (value === null) {
+        if (method === 'create') {
+          delete formattedData[key];
         } else if (method === 'update') {
           // For updates, if we receive an empty string
           // then the only way to clear out the string from
           // Dynamo is to pass a null instead
-          formattedData[key] = null;
+          formattedData[key] = '';
         }
       }
 
@@ -647,6 +653,13 @@ class DynamoWrapper {
         // If empty string, the only way to delete
         // a string from Dynamo is by passing a null
         if (value === '') {
+          delete joiData[key];
+        }
+
+        // If null, that means we are attempting to delete
+        // a string from Dynamo, we do not need to check the type
+        // in Joi for this
+        if (value === null) {
           delete joiData[key];
         }
 
