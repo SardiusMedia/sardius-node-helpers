@@ -167,8 +167,8 @@ describe('repositories/Dynamo/index', () => {
       key2: null,
     });
 
-    expect(result.key1).toEqual('');
-    expect(result.key2).toEqual('');
+    expect(result.key1).toEqual(undefined);
+    expect(result.key2).toEqual(undefined);
 
     const results = await db.query('pk_updateTestKey1', 'sk_updateTestKey1');
 
@@ -177,8 +177,6 @@ describe('repositories/Dynamo/index', () => {
         pk: 'pk_updateTestKey1',
         sk: 'sk_updateTestKey1',
         gsi1: 'gsi1_updateTestKey1',
-        key1: '',
-        key2: '',
       },
     ]);
   });
