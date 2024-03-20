@@ -8,6 +8,7 @@ import {
   QueryCommandInput,
   PutItemCommand,
   UpdateItemCommand,
+  UpdateItemCommandInput,
   DeleteItemCommand,
   AttributeValue,
 } from '@aws-sdk/client-dynamodb';
@@ -583,20 +584,9 @@ class DynamoWrapper {
         delete formattedData[key];
       }
 
-      if (value === '') {
+      if (value === '' || value === null) {
         if (method === 'create') {
           delete formattedData[key];
-        }
-      }
-
-      if (value === null) {
-        if (method === 'create') {
-          delete formattedData[key];
-        } else if (method === 'update') {
-          // For updates, if we receive an empty string
-          // then the only way to clear out the string from
-          // Dynamo is to pass a null instead
-          formattedData[key] = '';
         }
       }
 
@@ -747,6 +737,7 @@ class DynamoWrapper {
         {};
       const allExpressions: string[] = [];
       const addExpressions: string[] = [];
+      const removeExpressions: string[] = [];
 
       Object.keys(formattedData).forEach(key => {
         if (key !== this.pk && key !== this.sk && key !== 'incrementValues') {
@@ -755,7 +746,11 @@ class DynamoWrapper {
           ExpressionAttributeNames[`#${key}`] = key;
           ExpressionAttributeValues[`:${key}`] = value;
 
-          if (formattedData.incrementValues.indexOf(key) === -1) {
+          // If null or empty string, we want to remove from Dynamo
+          if (formattedData[key] === null || formattedData[key] === '') {
+            removeExpressions.push(`#${key}`);
+            delete ExpressionAttributeValues[`:${key}`];
+          } else if (formattedData.incrementValues.indexOf(key) === -1) {
             allExpressions.push(`#${key} = :${key}`);
           } else {
             addExpressions.push(`#${key} :${key}`);
@@ -775,6 +770,12 @@ class DynamoWrapper {
         } ADD ${addExpressions.join(', ')}`;
       }
 
+      if (removeExpressions.length > 0) {
+        UpdateExpression += `${
+          UpdateExpression ? ' ' : ''
+        } REMOVE ${removeExpressions.join(', ')}`;
+      }
+
       let ConditionExpression: UpdateItemCommand['input']['ConditionExpression'];
 
       if (shouldExist) {
@@ -785,7 +786,7 @@ class DynamoWrapper {
         }
       }
 
-      const updateConfig = {
+      const updateConfig: UpdateItemCommandInput = {
         TableName: this.model.tableName,
         Key: keys,
         ReturnValues: 'ALL_NEW',
@@ -794,6 +795,13 @@ class DynamoWrapper {
         ExpressionAttributeNames,
         UpdateExpression,
       };
+
+      // In the case where we are only removing values from Dynamo
+      // then we cannot have ExpressionAttributeValues exist when
+      // running the command or else Dynamo throws an error
+      if (Object.keys(ExpressionAttributeValues).length === 0) {
+        updateConfig.ExpressionAttributeValues = undefined;
+      }
 
       const command = new UpdateItemCommand(updateConfig);
 
