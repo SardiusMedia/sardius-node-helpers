@@ -2,6 +2,7 @@
 /_optimize
 /.serverless
 /.build
+/build
 /.webpack
 /npm-debug.log
 .DS_Store
