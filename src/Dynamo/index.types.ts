@@ -35,6 +35,7 @@ export type FilterOperations =
   | 'notEqual'
   | '!='
   | 'contains'
+  | 'notContains'
   | 'exist'
   | 'exists'
   | 'notExists'
@@ -102,6 +103,7 @@ export interface Options {
   sort?: 'ascending' | 'descending';
   attributes?: string[];
   filters?: Filter[];
+  filtersOperation?: 'AND' | 'OR';
   limit?: number;
   loadAll?: boolean;
   startKey?: Pk | { [key: string]: Pk };
