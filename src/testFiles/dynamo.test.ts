@@ -32,7 +32,7 @@ describe('repositories/Dynamo/index', () => {
 
     expect(result).toEqual(data);
 
-    // Overrwite works
+    // Overwrite works
     const result2 = await db.create(data, true);
 
     expect(result2).toEqual(data);
@@ -181,6 +181,41 @@ describe('repositories/Dynamo/index', () => {
         key2: '',
       },
     ]);
+  });
+
+  it('update should allow createdAt on the schema', async () => {
+    const db = new Dynamo('primary', { timestamps: true });
+
+    // Purposely do not include gsi1 to prove we can update without
+    // needing a required field from Joi
+    const data = {
+      pk: 'pk_testCreateAt',
+      sk: 'sk_testCreateAt',
+      key1: 'testCreateAt',
+      gsi1: 'gsi_testCreateAt',
+    };
+
+    const createResult = await db.create(data);
+
+    expect(createResult.pk).toEqual(data.pk);
+    expect(createResult.sk).toEqual(data.sk);
+    expect(createResult.key1).toEqual('testCreateAt');
+    expect(createResult.gsi1).toEqual(data.gsi1);
+    expect(typeof createResult.createdAt).toEqual('string');
+    expect(createResult.createdAt.length).not.toEqual(0);
+    expect(typeof createResult.updatedAt).toEqual('undefined');
+
+    const updateResult = await db.update({ ...data, key1: 'testCreateAt2' });
+
+    // This also proves that on update, you get the whole object back
+    expect(updateResult.pk).toEqual(data.pk);
+    expect(updateResult.sk).toEqual(data.sk);
+    expect(updateResult.key1).toEqual('testCreateAt2');
+    expect(updateResult.gsi1).toEqual(data.gsi1);
+    expect(typeof updateResult.createdAt).toEqual('string');
+    expect(updateResult.createdAt.length).not.toEqual(0);
+    expect(typeof updateResult.updatedAt).toEqual('string');
+    expect(updateResult.updatedAt.length).not.toEqual(0);
   });
 
   it('update fails as expected', async () => {

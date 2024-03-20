@@ -99,3 +99,6 @@ export interface Options {
       };
   exactLimit?: number;
 }
+export interface DBSetupOptions {
+  timestamps?: boolean;
+}

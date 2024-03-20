@@ -29,6 +29,7 @@ import {
   Operations,
   Filter,
   FilterOperations,
+  DBSetupOptions,
 } from './index.types';
 
 import sleep from '../helpers/sleep';
@@ -154,18 +155,24 @@ class DynamoWrapper {
   model: DynamoDbTable;
   schema: Record<string, Joi.Schema>;
   indexNames: string[];
+  timestamps: boolean;
   private mainIndex: DynamoDBClient;
 
   private indexesByName: {
     [key: string]: Index;
   };
 
-  constructor(dbClient: DynamoDBClient, schema: Schema) {
+  constructor(
+    dbClient: DynamoDBClient,
+    schema: Schema,
+    options?: DBSetupOptions,
+  ) {
     this.mainIndex = dbClient;
     this.pk = schema.table.hashKey;
     this.sk = schema.table.rangeKey;
     this.model = schema.table;
     this.schema = schema.schema;
+    this.timestamps = options?.timestamps || this.model.timestamps;
 
     this.indexesByName = {};
     this.indexNames = schema.table.indexes.map((index: Index) => index.name);
@@ -595,7 +602,7 @@ class DynamoWrapper {
 
       // Since increment functions are ran on a number field
       // we cant let an object pass for those fields, so we pull
-      // them out into a seperate field for processing later
+      // them out into a separate field for processing later
       if (value && value['$add']) {
         formattedData.incrementValues.push(key);
 
@@ -603,7 +610,7 @@ class DynamoWrapper {
       }
     });
 
-    if (this.model.timestamps) {
+    if (this.timestamps) {
       if (method === 'create') {
         formattedData.createdAt = new Date().toISOString();
       } else if (method === 'update') {
@@ -666,10 +673,11 @@ class DynamoWrapper {
       });
     }
 
-    if (this.model.timestamps) {
+    if (this.timestamps) {
       if (method === 'create') {
         schema.createdAt = Joi.string();
       } else if (method === 'update') {
+        schema.createdAt = Joi.string();
         schema.updatedAt = Joi.string();
       }
     }
