@@ -148,6 +148,41 @@ describe('repositories/Dynamo/index', () => {
     expect(result2).toEqual(data2);
   });
 
+  it('update works with empty strings and null', async () => {
+    const db = new Dynamo('primary');
+
+    await db.create({
+      pk: 'pk_updateTestKey1',
+      sk: 'sk_updateTestKey1',
+      gsi1: 'gsi1_updateTestKey1',
+      key1: 'abc',
+      key2: '123',
+      key3: null,
+    });
+
+    const result = await db.update({
+      pk: 'pk_updateTestKey1',
+      sk: 'sk_updateTestKey1',
+      key1: '',
+      key2: null,
+    });
+
+    expect(result.key1).toEqual('');
+    expect(result.key2).toEqual('');
+
+    const results = await db.query('pk_updateTestKey1', 'sk_updateTestKey1');
+
+    expect(results.Items).toEqual([
+      {
+        pk: 'pk_updateTestKey1',
+        sk: 'sk_updateTestKey1',
+        gsi1: 'gsi1_updateTestKey1',
+        key1: '',
+        key2: '',
+      },
+    ]);
+  });
+
   it('update fails as expected', async () => {
     const db = new Dynamo('primary');
 
