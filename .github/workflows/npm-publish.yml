@@ -17,11 +17,13 @@ jobs:
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
-
       - run: npm install
-      - run: npm run build
-      - run: npm run formatBuild
-      - run: cd ./build
-      - run: npm publish
+      - name: Convert Code from TS to JS
+        run: npm run build
+      - name: Format Build Folder
+        run: npm run formatBuild
+      - name: Publish to NPM
+        working-directory: ./build
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
