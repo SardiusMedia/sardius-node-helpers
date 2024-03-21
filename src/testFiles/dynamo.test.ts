@@ -552,7 +552,8 @@ describe('repositories/Dynamo/index', () => {
       key4: {
         key1: {
           key2: {
-            key3: 'abc',
+            // Purposely use a hyphen to catch a bug
+            'key-3': 'abc',
           },
         },
       },
@@ -561,7 +562,7 @@ describe('repositories/Dynamo/index', () => {
     const results = await db.query('pk_nestedKey1', undefined, {
       filters: [
         {
-          key: 'key4.key1.key2.key3',
+          key: 'key4.key1.key2.key-3',
           operation: '=',
           value: 'abc',
         },
