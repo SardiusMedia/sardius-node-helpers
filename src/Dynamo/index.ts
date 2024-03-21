@@ -445,9 +445,9 @@ class DynamoWrapper {
           validOptions.ExpressionAttributeNames &&
           validOptions.ExpressionAttributeValues
         ) {
-          let key = `#${index}${filter.key}`;
-          let valueKey = `:${index}${filter.key}`;
-          let valueKey2 = `:${index}${filter.key}2`;
+          let key = `#${index}`;
+          const valueKey = `:${index}`;
+          const valueKey2 = `:${index}2`;
 
           const noValueOperations = [
             'exist',
@@ -465,26 +465,21 @@ class DynamoWrapper {
             // Split the keys by the . so we can process them
             const splitKeys = filter.key.split('.');
 
-            // We have to add a unique key for each splitKey
-            splitKeys.forEach(splitKey => {
-              if (validOptions.ExpressionAttributeNames) {
-                validOptions.ExpressionAttributeNames[`#${splitKey}`] =
-                  splitKey;
-              }
-            });
+            const splitKeysFormatted: string[] = [];
 
-            // Format the keys to have the # in front
-            const splitKeysFormatted = splitKeys.map(
-              splitKey => `#${splitKey}`,
-            );
+            // We have to add a unique key for each splitKey
+            splitKeys.forEach((splitKey, index2) => {
+              const fullSplitKey = `${key}split${index2}`;
+
+              if (validOptions.ExpressionAttributeNames) {
+                validOptions.ExpressionAttributeNames[fullSplitKey] = splitKey;
+              }
+
+              splitKeysFormatted.push(fullSplitKey);
+            });
 
             // Join the keys back together so its nested again
             key = splitKeysFormatted.join('.');
-
-            // Update our value keys to only use the first key
-            // since Dynamo doesn't like . in those valueKey names
-            valueKey = `:${splitKeys[0]}`;
-            valueKey2 = `:${splitKeys[0]}2`;
           } else {
             validOptions.ExpressionAttributeNames[key] = filter.key;
           }
