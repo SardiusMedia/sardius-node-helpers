@@ -11,6 +11,8 @@ import {
   UpdateItemCommandInput,
   DeleteItemCommand,
   AttributeValue,
+  BatchGetItemCommand,
+  BatchGetItemInput,
 } from '@aws-sdk/client-dynamodb';
 
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
@@ -914,6 +916,67 @@ class DynamoWrapper {
         throw err;
       }
     }
+  }
+
+  async batchGet(
+    items: KeyValueAny[],
+    attributes?: Options['attributes'],
+  ): Promise<DynamoResponse['Items']> {
+    if (items.length > 100) {
+      throw Error('Cannot batchGet more then 100 items at a time');
+    }
+
+    const batchCommandInput: BatchGetItemInput = {
+      RequestItems: {
+        [this.model.tableName]: {
+          AttributesToGet: attributes || undefined,
+          Keys: items.map(item => marshall(item)),
+        },
+      },
+    };
+
+    let attempts = 0;
+    const maxAttempts = 10;
+    const timeBetweenEvents = 1000;
+
+    // We use an exponential backing off method where every time
+    // items fail to write, we wait longer and longer between attempts until
+    // we have reached our maxAttempts. Each attempt adds a second of wait time
+    // before attempting again. An example is a maxAttempt of 5 and timeBetweenEvents of 1 second
+    // will result in 15 seconds of total wait time: 1 + 2 + 3 + 4 + 5 = 15
+    const attemptUntilSuccessful = async (itemsToGet: BatchGetItemInput) => {
+      attempts += 1;
+
+      const command = new BatchGetItemCommand(itemsToGet);
+
+      // PutItem does not return the values for created rows
+      const results = await this.mainIndex.send(command);
+
+      const UnprocessedKeys =
+        results.UnprocessedKeys?.[this.model.tableName]?.Keys || [];
+
+      if (UnprocessedKeys.length > 0 && attempts < maxAttempts) {
+        await sleep(timeBetweenEvents * attempts);
+
+        await attemptUntilSuccessful({
+          RequestItems: {
+            [this.model.tableName]: {
+              AttributesToGet: attributes || undefined,
+              Keys: UnprocessedKeys,
+            },
+          },
+        });
+      }
+
+      return results.Responses?.[this.model.tableName];
+    };
+
+    const results = await attemptUntilSuccessful(batchCommandInput);
+
+    const Items: DynamoResponse['Items'] =
+      results?.map(item => unmarshall(item)) || [];
+
+    return Items;
   }
 
   async remove(pk: Pk, sk?: Pk): Promise<KeyValueAny> {
