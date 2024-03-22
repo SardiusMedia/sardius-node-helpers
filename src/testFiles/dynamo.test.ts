@@ -120,6 +120,32 @@ describe('repositories/Dynamo/index', () => {
     expect(allBatchResults).toMatchSnapshot();
   });
 
+  it('batch get works', async () => {
+    const db = new Dynamo('primary');
+
+    const data: any[] = [];
+
+    for (let i = 0; i < 25; i += 1) {
+      data.push({
+        pk: `pk_batchKey`,
+        sk: `sk_batchKey_${i}`,
+      });
+    }
+
+    const results = await db.batchGet(data);
+
+    expect(Array.isArray(results)).toEqual(true);
+    results.forEach(result => {
+      expect(typeof result.gsi1).toEqual('string');
+      expect(typeof result.pk).toEqual('string');
+      expect(typeof result.sk).toEqual('string');
+    });
+
+    const allBatchResults = await db.query('pk_batchKey');
+
+    expect(allBatchResults).toMatchSnapshot('All batch get results');
+  });
+
   it('update works', async () => {
     const db = new Dynamo('primary');
 
