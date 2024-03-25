@@ -174,6 +174,41 @@ describe('repositories/Dynamo/index', () => {
     expect(result2).toEqual(data2);
   });
 
+  it('update increment and deincrement', async () => {
+    const db = new Dynamo('primary');
+
+    // Purposely do not include gsi1 to prove we can update without
+    // needing a required field from Joi
+    const data = {
+      pk: 'pk_incrementKey',
+      sk: 'sk_incrementKey',
+      gsi1: 'gsi1_incrementKey',
+      numberKey: 1,
+    };
+
+    await db.create(data);
+
+    const result = await db.update({
+      pk: data.pk,
+      sk: data.sk,
+      numberKey: {
+        $add: 5,
+      },
+    });
+
+    expect(result.numberKey).toEqual(6);
+
+    const result2 = await db.update({
+      pk: data.pk,
+      sk: data.sk,
+      numberKey: {
+        $add: -2,
+      },
+    });
+
+    expect(result2.numberKey).toEqual(4);
+  });
+
   it('update works with empty strings and null', async () => {
     const db = new Dynamo('primary');
 
