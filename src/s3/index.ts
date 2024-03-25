@@ -25,6 +25,8 @@ import {
   S3ClientConfig,
 } from '@aws-sdk/client-s3';
 
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
 interface Params {
   accessKeyId?: string;
   secretAccessKey?: string;
@@ -80,7 +82,7 @@ export default class {
 
   async deleteObject(
     key: string,
-    options?: DeleteObjectCommandInput,
+    options?: Partial<DeleteObjectCommandInput>,
   ): Promise<DeleteObjectCommandOutput> {
     const fullOptions = options || {};
 
@@ -97,7 +99,7 @@ export default class {
 
   async deleteObjects(
     items: ObjectIdentifier[],
-    options?: DeleteObjectsCommandInput,
+    options?: Partial<DeleteObjectsCommandInput>,
   ): Promise<DeleteObjectsCommandOutput> {
     const fullOptions = options || {};
 
@@ -116,8 +118,8 @@ export default class {
 
   async putObject(
     key: string,
-    data: PutObjectCommandInput['Body'],
-    options?: PutObjectCommandInput,
+    data: any,
+    options?: Partial<PutObjectCommandInput>,
   ): Promise<PutObjectCommandOutput> {
     let formattedData = data;
 
@@ -141,7 +143,7 @@ export default class {
 
   async listObjects(
     prefix: string,
-    options?: ListObjectsV2CommandInput,
+    options?: Partial<ListObjectsV2CommandInput>,
   ): Promise<ListObjectsV2CommandOutput> {
     const fullOptions = options || {};
 
@@ -157,7 +159,7 @@ export default class {
   }
 
   async listBuckets(
-    options?: ListBucketsCommandInput,
+    options?: Partial<ListBucketsCommandInput>,
   ): Promise<ListBucketsCommandOutput> {
     const fullOptions = options || {};
 
@@ -170,7 +172,7 @@ export default class {
 
   async headObject(
     key: string,
-    options?: HeadObjectCommandInput,
+    options?: Partial<HeadObjectCommandInput>,
   ): Promise<HeadObjectCommandOutput> {
     const fullOptions = options || {};
 
@@ -187,7 +189,7 @@ export default class {
 
   async getObject(
     key: string,
-    options?: GetObjectCommandInput,
+    options?: Partial<GetObjectCommandInput>,
   ): Promise<GetObjectCommandOutput> {
     const fullOptions = options || {};
 
@@ -204,7 +206,7 @@ export default class {
 
   async getObjectAsString(
     key: string,
-    options?: GetObjectCommandInput,
+    options?: Partial<GetObjectCommandInput>,
   ): Promise<string> {
     const response = await this.getObject(key, options);
 
@@ -215,5 +217,27 @@ export default class {
     }
 
     return '';
+  }
+
+  async getSignedUrl(
+    key: string,
+    Expires: number,
+    options?: Partial<GetObjectCommandInput>,
+  ): Promise<string> {
+    const fullOptions = options || {};
+
+    const command = new GetObjectCommand({
+      ...fullOptions,
+      Key: key,
+      Bucket: options?.Bucket || this.bucket,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const url = await getSignedUrl(this.s3, command, {
+      expiresIn: Expires,
+    });
+
+    return url;
   }
 }
