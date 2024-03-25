@@ -213,7 +213,7 @@ class DynamoWrapper {
       rangeKey = foundIndex.rangeKey;
     }
 
-    const pkAttribute = marshall({ pk });
+    const pkAttribute = marshall({ pk }, { removeUndefinedValues: true });
 
     const keys: QueryCommand['input']['KeyConditions'] = {
       [hashKey]: {
@@ -233,7 +233,7 @@ class DynamoWrapper {
         attribute.value2 = value2;
       }
 
-      const skAttribute = marshall(attribute);
+      const skAttribute = marshall(attribute, { removeUndefinedValues: true });
 
       const attributeList = [skAttribute.value];
 
@@ -435,7 +435,7 @@ class DynamoWrapper {
           attribute.value2 = filter.value2;
         }
 
-        const cleanItem = marshall(attribute);
+        const cleanItem = marshall(attribute, { removeUndefinedValues: true });
 
         const attributeList = [cleanItem.value];
 
@@ -528,11 +528,16 @@ class DynamoWrapper {
 
     if (options && options.startKey) {
       if (typeof options.startKey === 'string') {
-        validOptions.ExclusiveStartKey = marshall({
-          [this.model.hashKey]: options.startKey,
-        });
+        validOptions.ExclusiveStartKey = marshall(
+          {
+            [this.model.hashKey]: options.startKey,
+          },
+          { removeUndefinedValues: true },
+        );
       } else {
-        validOptions.ExclusiveStartKey = marshall(options.startKey);
+        validOptions.ExclusiveStartKey = marshall(options.startKey, {
+          removeUndefinedValues: true,
+        });
       }
     }
 
@@ -565,7 +570,7 @@ class DynamoWrapper {
       tableKeys.rangeKey = sk;
     }
 
-    const keyAttributes = marshall(tableKeys);
+    const keyAttributes = marshall(tableKeys, { removeUndefinedValues: true });
 
     const keys: UpdateItemCommand['input']['Key'] = {
       [hashKey]: keyAttributes.hashKey,
@@ -848,7 +853,7 @@ class DynamoWrapper {
         RequestItems: {
           [this.model.tableName]: formattedItems.map(item => ({
             PutRequest: {
-              Item: marshall(item),
+              Item: marshall(item, { removeUndefinedValues: true }),
             },
           })),
         },
@@ -930,7 +935,9 @@ class DynamoWrapper {
       RequestItems: {
         [this.model.tableName]: {
           AttributesToGet: attributes || undefined,
-          Keys: items.map(item => marshall(item)),
+          Keys: items.map(item =>
+            marshall(item, { removeUndefinedValues: true }),
+          ),
         },
       },
     };
