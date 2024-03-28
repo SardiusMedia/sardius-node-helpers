@@ -2,7 +2,7 @@ import db from './db';
 import Dynamo from '../Dynamo/index';
 import { DBSetupOptions } from 'src/Dynamo/index.types';
 
-export type Schemas = 'primary'; // Update based on schemas from db.ts
+export type Schemas = 'primary' | 'zeroTest'; // Update based on schemas from db.ts
 
 export type IndexNames = 'sk-pk-index' | 'gsi1-sk-index'; // Replace with actual index names
 

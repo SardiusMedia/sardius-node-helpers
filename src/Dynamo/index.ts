@@ -227,7 +227,9 @@ class DynamoWrapper {
       const value2 = typeof sk === 'object' ? sk.value2 : undefined;
       const operation = typeof sk === 'object' ? sk.operation : 'equals';
 
-      const attribute: { value: string; value2?: string } = { value };
+      const attribute: { value: string | number; value2?: string | number } = {
+        value,
+      };
 
       if (value2) {
         attribute.value2 = value2;
@@ -291,8 +293,8 @@ class DynamoWrapper {
     // LastEvaluatedKey exists
     if (options?.exactLimit && modOptions.attributes) {
       lastEvaluatedKeys.forEach(key => {
-        if (modOptions.attributes?.indexOf(key) === -1) {
-          modOptions.attributes.push(key);
+        if (modOptions.attributes?.indexOf(`${key}`) === -1) {
+          modOptions.attributes.push(`${key}`);
         }
       });
     }
@@ -554,7 +556,7 @@ class DynamoWrapper {
     const hashKey = this.pk;
     const rangeKey = this.sk;
 
-    if (!pk) {
+    if (pk === undefined || pk === null) {
       throw Error('DynamoDB update error: Missing hashKey');
     }
 
@@ -563,7 +565,7 @@ class DynamoWrapper {
     };
 
     if (rangeKey) {
-      if (!sk) {
+      if (sk === undefined || sk === null) {
         throw Error('DynamoDB update error: Missing rangeKey');
       }
 
