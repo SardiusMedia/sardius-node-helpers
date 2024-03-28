@@ -736,23 +736,23 @@ describe('repositories/Dynamo/index', () => {
     expect(results.Items.length).toEqual(0);
   });
 
-  it('remove sk of 0 works', async () => {
+  it('should crud with pk and sk number values', async () => {
     const db = new Dynamo('zeroTest');
 
     // Create an item with an sk number value of 0
-    const created = await db.create({ pk: 'pk_key1', sk: 0, gsi1: 'test' });
+    const created = await db.create({ pk: 0, sk: 0, gsi1: 'test' });
     expect(created).toMatchSnapshot();
 
     // Make sure the item exists
-    const queried = await db.query('pk_key1', 0);
+    const queried = await db.query(0, 0);
     expect(queried).toMatchSnapshot();
 
     // Delete the item
-    const remove = await db.remove('pk_key1', 0);
+    const remove = await db.remove(0, 0);
     expect(remove).toEqual(created);
 
     // Check that the item was deleted
-    const check = await db.query('pk_key1', 0);
+    const check = await db.query(0, 0);
     expect(check.Items.length).toEqual(0);
   });
 });

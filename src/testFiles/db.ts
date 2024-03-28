@@ -77,7 +77,7 @@ const primarySchema = {
 };
 
 const zeroTestSchema = {
-  pk: Joi.string().required(),
+  pk: Joi.number().required(),
   sk: Joi.number().required(),
   gsi1: Joi.string().required(),
 };

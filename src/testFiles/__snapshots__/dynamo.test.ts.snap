@@ -2100,21 +2100,21 @@ exports[`repositories/Dynamo/index query works: Pk and SK with beginsWith 1`] = 
 }
 `;
 
-exports[`repositories/Dynamo/index remove sk of 0 works 1`] = `
+exports[`repositories/Dynamo/index should crud with pk and sk number values 1`] = `
 {
   "gsi1": "test",
-  "pk": "pk_key1",
+  "pk": 0,
   "sk": 0,
 }
 `;
 
-exports[`repositories/Dynamo/index remove sk of 0 works 2`] = `
+exports[`repositories/Dynamo/index should crud with pk and sk number values 2`] = `
 {
   "Count": 1,
   "Items": [
     {
       "gsi1": "test",
-      "pk": "pk_key1",
+      "pk": 0,
       "sk": 0,
     },
   ],

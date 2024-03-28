@@ -3,8 +3,8 @@ import Joi from 'joi';
 import { KeyValueAny } from '../common/tsModels';
 
 export interface DynamoDbTable {
-  hashKey: string;
-  rangeKey: string;
+  hashKey: string | number;
+  rangeKey: string | number;
   timestamps: boolean;
   tableName: string;
   indexes: Array<{
@@ -15,7 +15,7 @@ export interface DynamoDbTable {
   }>;
 }
 
-export type Pk = string;
+export type Pk = string | number;
 
 export type Operations =
   | '='

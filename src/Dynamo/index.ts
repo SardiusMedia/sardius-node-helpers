@@ -196,7 +196,7 @@ class DynamoWrapper {
 
   private buildQuery(
     pk: Pk,
-    sk?: Pk | Sk | number,
+    sk?: Pk | Sk,
     gsiIndex?: (typeof this.indexNames)[number],
   ): QueryCommand['input']['KeyConditions'] {
     let hashKey = this.pk;
@@ -254,7 +254,7 @@ class DynamoWrapper {
 
   async loadAll(
     pk: Pk,
-    sk?: Pk | Sk | number,
+    sk?: Pk | Sk,
     options?: Options,
     gsiIndex?: (typeof this.indexNames)[number],
   ): Promise<DynamoResponse> {
@@ -293,8 +293,8 @@ class DynamoWrapper {
     // LastEvaluatedKey exists
     if (options?.exactLimit && modOptions.attributes) {
       lastEvaluatedKeys.forEach(key => {
-        if (modOptions.attributes?.indexOf(key) === -1) {
-          modOptions.attributes.push(key);
+        if (modOptions.attributes?.indexOf(`${key}`) === -1) {
+          modOptions.attributes.push(`${key}`);
         }
       });
     }
@@ -350,7 +350,7 @@ class DynamoWrapper {
 
   async query(
     pk: Pk,
-    sk?: Pk | Sk | number,
+    sk?: Pk | Sk,
     options?: Options,
     gsiIndex?: (typeof this.indexNames)[number],
   ): Promise<DynamoResponse> {
@@ -552,11 +552,11 @@ class DynamoWrapper {
     return validOptions;
   }
 
-  private getKeys(pk: Pk, sk?: Pk | number): Record<string, AttributeValue> {
+  private getKeys(pk: Pk, sk?: Pk): Record<string, AttributeValue> {
     const hashKey = this.pk;
     const rangeKey = this.sk;
 
-    if (!pk) {
+    if (pk === undefined || pk === null) {
       throw Error('DynamoDB update error: Missing hashKey');
     }
 
@@ -988,7 +988,7 @@ class DynamoWrapper {
     return Items;
   }
 
-  async remove(pk: Pk, sk?: Pk | number): Promise<KeyValueAny> {
+  async remove(pk: Pk, sk?: Pk): Promise<KeyValueAny> {
     const keys: DeleteItemCommand['input']['Key'] = this.getKeys(pk, sk);
 
     const Expected: UpdateItemCommand['input']['Expected'] = {
