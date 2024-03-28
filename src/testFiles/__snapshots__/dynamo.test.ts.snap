@@ -2099,3 +2099,26 @@ exports[`repositories/Dynamo/index query works: Pk and SK with beginsWith 1`] = 
   "ScannedCount": 11,
 }
 `;
+
+exports[`repositories/Dynamo/index remove sk of 0 works 1`] = `
+{
+  "gsi1": "test",
+  "pk": "pk_key1",
+  "sk": 0,
+}
+`;
+
+exports[`repositories/Dynamo/index remove sk of 0 works 2`] = `
+{
+  "Count": 1,
+  "Items": [
+    {
+      "gsi1": "test",
+      "pk": "pk_key1",
+      "sk": 0,
+    },
+  ],
+  "LastEvaluatedKey": undefined,
+  "ScannedCount": 1,
+}
+`;

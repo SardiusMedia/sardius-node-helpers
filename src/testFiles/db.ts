@@ -37,9 +37,31 @@ const table: DynamoDbTable = {
   ],
 };
 
+const tableZeroTest: DynamoDbTable = {
+  hashKey: 'pk',
+  rangeKey: 'sk',
+  tableName: process.env.dynamoTable2 || '',
+  timestamps: true,
+  indexes: [
+    {
+      hashKey: 'sk',
+      rangeKey: 'pk',
+      name: 'sk-pk-index',
+      type: 'global',
+    },
+    {
+      hashKey: 'gsi1',
+      rangeKey: 'sk',
+      name: 'gsi1-sk-index',
+      type: 'global',
+    },
+  ],
+};
+
 // Turn off timestamps for jest tests since that is hard to control
 if (process.env.MOCK_DYNAMODB_ENDPOINT) {
   table.timestamps = false;
+  tableZeroTest.timestamps = false;
 }
 
 const primarySchema = {
@@ -54,12 +76,24 @@ const primarySchema = {
   numberKey: Joi.number(),
 };
 
+const zeroTestSchema = {
+  pk: Joi.string().required(),
+  sk: Joi.number().required(),
+  gsi1: Joi.string().required(),
+};
+
 const primary: Schema = {
   table,
   schema: primarySchema,
 };
 
+const zeroTest: Schema = {
+  table: tableZeroTest,
+  schema: zeroTestSchema,
+};
+
 export default {
   dbClient,
   primary,
+  zeroTest,
 };
