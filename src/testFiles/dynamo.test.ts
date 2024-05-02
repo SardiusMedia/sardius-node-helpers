@@ -722,6 +722,38 @@ describe('repositories/Dynamo/index', () => {
     expect(result).toMatchSnapshot();
   });
 
+  it('scan works', async () => {
+    const db = new Dynamo('primary');
+
+    // Raw Scan
+    const result = await db.scan({
+      limit: 10,
+    });
+    expect(result).toMatchSnapshot('Raw Scan');
+
+    expect(result.LastEvaluatedKey).not.toEqual(undefined);
+
+    // Pagination works
+    const result2 = await db.scan({
+      limit: 10,
+      startKey: result.LastEvaluatedKey,
+    });
+    expect(result2).toMatchSnapshot('Raw Scan Page 2');
+
+    // Filter Scan
+    const result3 = await db.scan({
+      filters: [
+        {
+          key: 'key1',
+          operation: 'beginsWith',
+          value: 'key1_batchKey_1',
+        },
+      ],
+    });
+
+    expect(result3).toMatchSnapshot('Filter Scan');
+  });
+
   it('remove works', async () => {
     const db = new Dynamo('primary');
 

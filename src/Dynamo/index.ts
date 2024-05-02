@@ -13,6 +13,7 @@ import {
   AttributeValue,
   BatchGetItemCommand,
   BatchGetItemInput,
+  ScanCommand,
 } from '@aws-sdk/client-dynamodb';
 
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
@@ -415,6 +416,52 @@ class DynamoWrapper {
     }
 
     return this.query(pk, sk, options, gsiName);
+  }
+
+  async scan(options?: Options, gsiName?: (typeof this.indexNames)[number]) {
+    if (gsiName && !this.indexesByName[gsiName]) {
+      throw Error(
+        `The following index was not found in your dynogels model: ${gsiName}`,
+      );
+    }
+    const buildOptions = this.processOptions(options);
+
+    const input = new ScanCommand({
+      ...buildOptions,
+      TableName: this.model.tableName,
+      IndexName: gsiName || undefined,
+    });
+
+    const response = await this.mainIndex.send(input);
+
+    const formattedResponse: DynamoResponse = {
+      Count: response.Count,
+      Items: response.Items?.map(item => unmarshall(item)) || [],
+      LastEvaluatedKey: response.LastEvaluatedKey
+        ? unmarshall(response.LastEvaluatedKey)
+        : undefined,
+      ScannedCount: response.ScannedCount,
+    };
+
+    if (
+      options?.attributes &&
+      options?.filters &&
+      options?.filters.length > 0
+    ) {
+      formattedResponse.Items = formattedResponse.Items.map(item => {
+        const fullItem: any = {};
+
+        options?.attributes?.forEach((key: string) => {
+          if (item[key] !== undefined) {
+            fullItem[key] = item[key];
+          }
+        });
+
+        return fullItem;
+      });
+    }
+
+    return formattedResponse;
   }
 
   private processOptions(options?: Options): Partial<QueryCommandInput> {
