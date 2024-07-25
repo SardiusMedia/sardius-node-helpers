@@ -27,6 +27,8 @@ import {
 
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
+import isObject from '../helpers/isObject';
+
 interface Params {
   accessKeyId?: string;
   secretAccessKey?: string;
@@ -123,7 +125,7 @@ export default class {
   ): Promise<PutObjectCommandOutput> {
     let formattedData = data;
 
-    if (typeof data === 'object' && data !== null) {
+    if (isObject(data)) {
       formattedData = JSON.stringify(data);
     }
 
