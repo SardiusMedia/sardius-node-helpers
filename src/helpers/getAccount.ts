@@ -1,18 +1,6 @@
 import KeyValueAny from '../common/tsModels/keyValueAny';
 import invokeLambda from './invokeLambda';
 
-interface hubSpotActiveDeal {
-  id: string;
-}
-
-interface Contract {
-  startDate?: string;
-  renewalDate?: string;
-  akamaiReportingGroupId?: string;
-  hubSpotAccountId?: string;
-  hubSpotActiveDeals?: hubSpotActiveDeal[];
-}
-
 interface Account {
   access: string[];
   accountManager: boolean;
@@ -27,7 +15,6 @@ interface Account {
   childAccounts: KeyValueAny;
   clippingFeedId: string;
   contactInfo: KeyValueAny;
-  contract: Contract;
   customerInfo: KeyValueAny;
   controlPanel: KeyValueAny;
   createdBy: string;
