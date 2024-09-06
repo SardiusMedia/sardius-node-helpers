@@ -972,14 +972,10 @@ class DynamoWrapper {
     }
   }
 
-  async batchGet(
+  async batchGetAll(
     items: KeyValueAny[],
     attributes?: Options['attributes'],
   ): Promise<DynamoResponse['Items']> {
-    if (items.length > 100) {
-      throw Error('Cannot batchGet more then 100 items at a time');
-    }
-
     const batchCommandInput: BatchGetItemInput = {
       RequestItems: {
         [this.model.tableName]: {
@@ -1033,6 +1029,41 @@ class DynamoWrapper {
       results?.map(item => unmarshall(item)) || [];
 
     return Items;
+  }
+
+  splitArrayIntoChunks(arr: KeyValueAny[], chunkSize = 100) {
+    const result = [];
+    for (let i = 0; i < arr.length; i += chunkSize) {
+      // Slice the array into chunks of the specified size (100 by default)
+      const chunk = arr.slice(i, i + chunkSize);
+      result.push(chunk);
+    }
+    return result;
+  }
+
+  async batchGet(
+    items: KeyValueAny[],
+    attributes?: Options['attributes'],
+  ): Promise<DynamoResponse['Items']> {
+    if (items.length > 100) {
+      const arrayOfItemArrays = this.splitArrayIntoChunks(items);
+      let finalResults: KeyValueAny[] = [];
+      const promises: Promise<KeyValueAny[]>[] = [];
+
+      arrayOfItemArrays.forEach(arrayOfItems => {
+        promises.push(this.batchGetAll(arrayOfItems, attributes));
+      });
+
+      const arrayOfResultsArrays = await Promise.all(promises);
+
+      arrayOfResultsArrays.forEach(resultsArray => {
+        finalResults = [...finalResults, ...resultsArray];
+      });
+
+      return finalResults;
+    } else {
+      return await this.batchGetAll(items, attributes);
+    }
   }
 
   async remove(pk: Pk, sk?: Pk): Promise<KeyValueAny> {

@@ -1,6 +1,6 @@
 {
   "name": "sardius-node-helpers-wrapper",
-  "version": "1.0.0",
+  "version": "1.0.27",
   "description": "Has all the needed config files to run the typescript",
   "scripts": {
     "prepare": "husky install",
@@ -9,7 +9,7 @@
     "test": "jest --no-cache",
     "test-staged": "jest --passWithNoTests --findRelatedTests",
     "coverage": "jest --coverage",
-    "build": "npx tsc src/index.ts src/helpers/*.ts src/Dynamo/*.ts src/s3/*.ts --esModuleInterop --outDir build --declaration",
+    "build": "npx tsc src/index.ts src/helpers/*.ts src/Dynamo/*.ts src/s3/*.ts --esModuleInterop --outDir build --declaration && node updateBuildVersion.js",
     "formatBuild": "prettier --write build/"
   },
   "license": "MIT",
