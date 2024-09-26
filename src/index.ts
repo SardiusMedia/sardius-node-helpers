@@ -2,6 +2,7 @@ import DynamoWrapper from './Dynamo';
 import * as DynamoWrapperTypes from './Dynamo/index.types';
 import S3Wrapper from './s3';
 
+import { getBuckets, validateBucket } from './helpers';
 import getAccount from './helpers/getAccount';
 import getAWSSecrets from './helpers/getAWSSecrets';
 import getStage from './helpers/getStage';
@@ -13,12 +14,14 @@ import stepFunctionHelpers from './helpers/stepFunctionHelpers';
 export {
   DynamoWrapper,
   DynamoWrapperTypes,
-  S3Wrapper,
-  getAWSSecrets,
   getAccount,
+  getAWSSecrets,
+  getBuckets,
   getStage,
   invokeLambda,
+  S3Wrapper,
   sendSlack,
   sleep,
   stepFunctionHelpers,
+  validateBucket,
 };
