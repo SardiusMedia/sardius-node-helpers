@@ -6,12 +6,14 @@ import invokeLambda from './invokeLambda';
 import isObject from './isObject';
 import sendSlack from './sendSlack';
 import stepFunctionHelpers from './stepFunctionHelpers';
+import validateBucket from './buckets/validateBucket';
 
 // Export all of our help function in one file for easy import
 export {
   getAccount,
   getAWSSecrets,
   getBuckets,
+  validateBucket,
   getStage,
   invokeLambda,
   isObject,
