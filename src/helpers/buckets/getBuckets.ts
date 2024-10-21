@@ -74,7 +74,7 @@ export default async (
         'sj_assets',
         'bb_assets',
         'bb_assets-eu',
-        // 'lc_assets',
+        'lc_assets',
       ];
     }
   }
