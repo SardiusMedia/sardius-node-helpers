@@ -193,7 +193,7 @@ describe('src/helpers/buckets/getBuckets', () => {
       mockSJEnvBucket,
       mockBBEnvBucket,
       mockBBEUEnvBucket,
-      // mockLCEnvBucket,
+      mockLCEnvBucket,
     ]);
   });
 
