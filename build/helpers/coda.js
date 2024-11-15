@@ -141,6 +141,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 var axios_1 = __importDefault(require('axios'));
 function coda(
   data,
+  token,
   // Goes to this table: https://coda.io/d/Sardius-Handbook_dkz6CSLf2xX/Transcode-Errors_su73rtwS#_lucjwgmt
   codaTable,
 ) {
@@ -157,9 +158,7 @@ function coda(
             (0, axios_1.default)({
               url: codaTable,
               method: 'POST',
-              headers: {
-                Authorization: 'Bearer 9bfa3b73-ca68-4437-b9db-1201ad60dedd',
-              },
+              headers: { Authorization: token },
               data: {
                 rows: [
                   {

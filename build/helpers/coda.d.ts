@@ -19,5 +19,9 @@ interface TranscodeRow {
     | 'In Progress Support'
     | 'In Progress Dev';
 }
-declare function coda(data: TranscodeRow, codaTable?: string): Promise<void>;
+declare function coda(
+  data: TranscodeRow,
+  token: string,
+  codaTable?: string,
+): Promise<void>;
 export default coda;
