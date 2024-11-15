@@ -22,9 +22,13 @@ interface TranscodeRow {
     | 'In Progress Dev';
 }
 
-async function coda(data: TranscodeRow): Promise<void> {
+async function coda(
+  data: TranscodeRow,
+  // Goes to this table: https://coda.io/d/Sardius-Handbook_dkz6CSLf2xX/Transcode-Errors_su73rtwS#_lucjwgmt
+  codaTable = 'https://coda.io/apis/v1/docs/kz6CSLf2xX/tables/grid-saLDZ9ySKU/rows',
+): Promise<void> {
   await axios({
-    url: 'https://coda.io/apis/v1/docs/kz6CSLf2xX/tables/grid-saLDZ9ySKU/rows',
+    url: codaTable,
     method: 'POST',
     headers: { Authorization: 'Bearer 9bfa3b73-ca68-4437-b9db-1201ad60dedd' },
     data: {
