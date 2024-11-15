@@ -1,3 +1,4 @@
 import KeyValueAny from './keyValueAny';
 import KeyValue from './keyValue';
-export { KeyValueAny, KeyValue };
+import Bucket from './bucket';
+export { Bucket, KeyValueAny, KeyValue };
