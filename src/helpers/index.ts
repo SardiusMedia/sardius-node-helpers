@@ -1,3 +1,4 @@
+import coda from './coda';
 import getAccount from './getAccount';
 import getAWSSecrets from './getAWSSecrets';
 import getBuckets from './buckets/getBuckets';
@@ -10,13 +11,14 @@ import validateBucket from './buckets/validateBucket';
 
 // Export all of our help function in one file for easy import
 export {
+  coda,
   getAccount,
   getAWSSecrets,
   getBuckets,
-  validateBucket,
   getStage,
   invokeLambda,
   isObject,
   sendSlack,
   stepFunctionHelpers,
+  validateBucket,
 };
