@@ -935,7 +935,7 @@ describe('repositories/Dynamo/index', () => {
     const existsResult = await db.update(updateData, {
       conditionals: [
         {
-          key: 'key4',
+          key: 'key4.key1',
           operation: 'attribute_exists',
         },
       ],

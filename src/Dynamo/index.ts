@@ -876,9 +876,33 @@ class DynamoWrapper {
           .map(data => {
             const { key, operation, value, value2 } = data;
 
-            const formattedKey = `c_${key}`;
+            let formattedKey = `c_${key}`;
 
-            ExpressionAttributeNames[`#${formattedKey}`] = key;
+            // Support nested keys
+            if (key.indexOf('.') > -1) {
+              const [cleanBeginning] = formattedKey.split('.');
+
+              formattedKey = cleanBeginning;
+
+              // Split the keys by the . so we can process them
+              const splitKeys = key.split('.');
+
+              const splitKeysFormatted: string[] = [];
+
+              // We have to add a unique key for each splitKey
+              splitKeys.forEach((splitKey, index2) => {
+                const fullSplitKey = `${formattedKey}split${index2}`;
+
+                ExpressionAttributeNames[`#${fullSplitKey}`] = splitKey;
+
+                splitKeysFormatted.push(fullSplitKey);
+              });
+
+              // Join the keys back together so its nested again
+              formattedKey = splitKeysFormatted.join('.#');
+            } else {
+              ExpressionAttributeNames[`#${formattedKey}`] = key;
+            }
 
             if (value !== undefined) {
               const dynamoConditionalData = marshall(
