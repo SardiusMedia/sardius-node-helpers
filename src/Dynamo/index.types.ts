@@ -136,5 +136,4 @@ interface Conditional {
 export interface UpdateOptions {
   shouldExist?: boolean;
   conditionals?: Conditional[];
-  conditionalRaw?: string;
 }
