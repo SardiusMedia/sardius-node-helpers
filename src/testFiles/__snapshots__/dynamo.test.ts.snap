@@ -2563,3 +2563,15 @@ exports[`repositories/Dynamo/index should crud with pk and sk number values 2`] 
   "ScannedCount": 1,
 }
 `;
+
+exports[`repositories/Dynamo/index should update with conditionals 1`] = `
+{
+  "gsi1": "conditionalGSI1",
+  "key4": {
+    "key1": "exists",
+  },
+  "numberKey": 5,
+  "pk": "conditionalPK",
+  "sk": "conditionalSK",
+}
+`;
