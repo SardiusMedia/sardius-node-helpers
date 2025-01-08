@@ -720,16 +720,14 @@ class DynamoWrapper {
         }
 
         if (key.indexOf('.') > -1) {
-          const [rootKey] = key.split('.');
+          const [rootKey, subKey] = key.split('.');
 
           if (this.schema[rootKey]) {
             schema[rootKey] = this.schema[rootKey];
-            joiData[rootKey] = { value };
+            joiData[rootKey] = { [subKey]: value };
             delete joiData[key];
           }
-        }
-
-        if (this.schema[key]) {
+        } else if (this.schema[key]) {
           schema[key] = this.schema[key];
         }
       });
