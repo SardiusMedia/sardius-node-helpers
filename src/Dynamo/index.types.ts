@@ -136,4 +136,5 @@ interface Conditional {
 export interface UpdateOptions {
   shouldExist?: boolean;
   conditionals?: Conditional[];
+  skipJoiCheck?: boolean;
 }

@@ -2592,3 +2592,12 @@ exports[`repositories/Dynamo/index should update with conditionals 1`] = `
   "sk": "conditionalSK",
 }
 `;
+
+exports[`repositories/Dynamo/index update skips Joi validation 1`] = `
+{
+  "gsi1": "gsi_joiValidation",
+  "keyThatIsNotInJoiModel": 234,
+  "pk": "pk_joiValidation",
+  "sk": "sk_joiValidation",
+}
+`;

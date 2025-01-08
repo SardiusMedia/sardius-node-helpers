@@ -792,16 +792,19 @@ class DynamoWrapper {
   // it as a boolean
   async update(
     data: KeyValueAny,
-    options?: boolean | UpdateOptions,
+    rawOptions?: boolean | UpdateOptions,
   ): Promise<KeyValueAny> {
     let hasConditionals = false;
 
     try {
-      const shouldExist = options === true || (options && options.shouldExist);
+      const options = typeof rawOptions === 'object' ? rawOptions : {};
+      const shouldExist = rawOptions === true || options.shouldExist;
 
       const formattedData = this.formatData(data, 'update');
 
-      this.checkSchema(formattedData, 'update');
+      if (!options.skipJoiCheck) {
+        this.checkSchema(formattedData, 'update');
+      }
 
       const keys = this.getKeys(data[this.pk], data[this.sk]);
 
@@ -899,8 +902,7 @@ class DynamoWrapper {
       }
 
       // Conditional Option
-      const conditionalUpdates =
-        (typeof options === 'object' && options.conditionals) || [];
+      const conditionalUpdates = options.conditionals || [];
 
       if (conditionalUpdates.length > 0) {
         hasConditionals = true;

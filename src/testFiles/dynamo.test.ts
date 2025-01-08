@@ -1098,4 +1098,25 @@ describe('repositories/Dynamo/index', () => {
       key2: null,
     });
   });
+
+  it('update skips Joi validation', async () => {
+    const db = new Dynamo('primary');
+
+    await db.create({
+      pk: 'pk_joiValidation',
+      sk: 'sk_joiValidation',
+      gsi1: 'gsi_joiValidation',
+    });
+
+    const results = await db.update(
+      {
+        pk: 'pk_joiValidation',
+        sk: 'sk_joiValidation',
+        keyThatIsNotInJoiModel: 234,
+      },
+      { skipJoiCheck: true, shouldExist: true },
+    );
+
+    expect(results).toMatchSnapshot();
+  });
 });
