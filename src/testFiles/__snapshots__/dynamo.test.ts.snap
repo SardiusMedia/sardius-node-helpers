@@ -2564,6 +2564,23 @@ exports[`repositories/Dynamo/index should crud with pk and sk number values 2`] 
 }
 `;
 
+exports[`repositories/Dynamo/index should update part of an object 1`] = `
+{
+  "gsi1": "gsi1",
+  "key4": {
+    "key1": {
+      "key1Test": "key1",
+    },
+    "key2": {
+      "key2Test": "key2",
+    },
+  },
+  "numberKey": 5,
+  "pk": "pk",
+  "sk": "sk",
+}
+`;
+
 exports[`repositories/Dynamo/index should update with conditionals 1`] = `
 {
   "gsi1": "conditionalGSI1",
