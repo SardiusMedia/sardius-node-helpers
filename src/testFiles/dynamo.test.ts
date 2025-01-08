@@ -941,6 +941,8 @@ describe('repositories/Dynamo/index', () => {
       ],
     });
 
+    expect(existsResult.key5).toEqual(updateData.key5);
+
     // Exists condition should pass with a hypen in the key
     // eslint-disable-next-line
     // @ts-ignore
