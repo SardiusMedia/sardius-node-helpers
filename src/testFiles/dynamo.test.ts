@@ -1033,4 +1033,69 @@ describe('repositories/Dynamo/index', () => {
 
     expect(betweenResult.key5).toEqual(updateData.key5);
   });
+
+  it('should update part of an object', async () => {
+    const db = new Dynamo('primary');
+
+    const key4 = {
+      key1: {
+        key1Test: 'key1',
+      },
+      key2: {
+        key2Test: 'key2',
+      },
+    };
+
+    // Create an item with an sk number value of 0
+    const created = await db.create({
+      pk: 'pk',
+      sk: 'sk',
+      gsi1: 'gsi1',
+      key4,
+      numberKey: 5,
+    });
+
+    expect(created).toMatchSnapshot();
+
+    const result = await db.update(
+      {
+        pk: 'pk',
+        sk: 'sk',
+        'key4.key2': {
+          key2Test: 'key2NewValue',
+          key2Test2: 'key2NewValue2',
+        },
+      },
+      {
+        shouldExist: true,
+      },
+    );
+
+    expect(result.key4).toEqual({
+      ...key4,
+      key2: {
+        key2Test: 'key2NewValue',
+        key2Test2: 'key2NewValue2',
+      },
+    });
+
+    // Should be able to remove a key from an object
+    const result2 = await db.update(
+      {
+        pk: 'pk',
+        sk: 'sk',
+        'key4.key2': null,
+      },
+      {
+        shouldExist: true,
+      },
+    );
+
+    expect(result2.key4).toEqual({
+      key1: {
+        key1Test: 'key1',
+      },
+      key2: null,
+    });
+  });
 });

@@ -719,6 +719,16 @@ class DynamoWrapper {
           delete joiData[key];
         }
 
+        if (key.indexOf('.') > -1) {
+          const [rootKey] = key.split('.');
+
+          if (this.schema[rootKey]) {
+            schema[rootKey] = this.schema[rootKey];
+            joiData[rootKey] = { value };
+            delete joiData[key];
+          }
+        }
+
         if (this.schema[key]) {
           schema[key] = this.schema[key];
         }
@@ -811,21 +821,52 @@ class DynamoWrapper {
       const addExpressions: string[] = [];
       const removeExpressions: string[] = [];
 
-      Object.keys(formattedData).forEach(key => {
-        if (key !== this.pk && key !== this.sk && key !== 'incrementValues') {
-          const value = dynamoFormatData[key];
+      Object.keys(formattedData).forEach(rawKey => {
+        if (
+          rawKey !== this.pk &&
+          rawKey !== this.sk &&
+          rawKey !== 'incrementValues'
+        ) {
+          const value = dynamoFormatData[rawKey];
 
-          ExpressionAttributeNames[`#${key}`] = key;
-          ExpressionAttributeValues[`:${key}`] = value;
+          let key = rawKey;
+          let valueKey = rawKey;
+
+          if (key.indexOf('.') > -1) {
+            // Split the keys by the . so we can process them
+            const splitKeys = key.split('.');
+
+            const rootKey = splitKeys[0];
+
+            const splitKeysFormatted: string[] = [];
+
+            // We have to add a unique key for each splitKey
+            splitKeys.forEach((splitKey, index2) => {
+              const fullSplitKey = `${rootKey}split${index2}`;
+
+              ExpressionAttributeNames[`#${fullSplitKey}`] = splitKey;
+
+              splitKeysFormatted.push(fullSplitKey);
+            });
+
+            // Join the keys back together so its nested again
+            key = splitKeysFormatted.join('.#');
+
+            valueKey = splitKeys.join(''); // This is the key without the .
+          } else {
+            ExpressionAttributeNames[`#${key}`] = key;
+          }
+
+          ExpressionAttributeValues[`:${valueKey}`] = value;
 
           // If null or empty string, we want to remove from Dynamo
           if (formattedData[key] === null || formattedData[key] === '') {
             removeExpressions.push(`#${key}`);
-            delete ExpressionAttributeValues[`:${key}`];
+            delete ExpressionAttributeValues[`:${valueKey}`];
           } else if (formattedData.incrementValues.indexOf(key) === -1) {
-            allExpressions.push(`#${key} = :${key}`);
+            allExpressions.push(`#${key} = :${valueKey}`);
           } else {
-            addExpressions.push(`#${key} :${key}`);
+            addExpressions.push(`#${key} :${valueKey}`);
           }
         }
       });
