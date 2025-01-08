@@ -822,7 +822,7 @@ describe('repositories/Dynamo/index', () => {
       pk: 'conditionalPK',
       sk: 'conditionalSK',
       gsi1: 'conditionalGSI1',
-      key4: { key1: 'exists' },
+      key4: { key1: 'exists', 'key1-test': 'exists2' },
       numberKey: 5,
     });
 
@@ -941,7 +941,21 @@ describe('repositories/Dynamo/index', () => {
       ],
     });
 
-    expect(existsResult.key5).toEqual(updateData.key5);
+    // Exists condition should pass with a hypen in the key
+    // eslint-disable-next-line
+    // @ts-ignore
+    updateData.key5 = [{ 'key3-test': 'exists2' }];
+
+    const existsResult2 = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'key4.key1-test',
+          operation: 'attribute_exists',
+        },
+      ],
+    });
+
+    expect(existsResult2.key5).toEqual(updateData.key5);
 
     // Not Exists condition should pass
     updateData.key5 = [{ key1: 'not exists' }];
@@ -1097,6 +1111,15 @@ describe('repositories/Dynamo/index', () => {
       },
       key2: null,
     });
+
+    // Should be able to use a key with hyphens
+    const result3 = await db.update({
+      pk: 'pk',
+      sk: 'sk',
+      'key4.key3-test': 'success',
+    });
+
+    expect(result3.key4['key3-test']).toEqual('success');
   });
 
   it('update skips Joi validation', async () => {

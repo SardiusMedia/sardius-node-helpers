@@ -2586,6 +2586,7 @@ exports[`repositories/Dynamo/index should update with conditionals 1`] = `
   "gsi1": "conditionalGSI1",
   "key4": {
     "key1": "exists",
+    "key1-test": "exists2",
   },
   "numberKey": 5,
   "pk": "conditionalPK",

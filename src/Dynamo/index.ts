@@ -39,6 +39,14 @@ import {
 
 import sleep from '../helpers/sleep';
 
+const cleanDynamoOperationsKey = (key: string): string => {
+  const restrictedCharacters = ['-'];
+
+  const regex = new RegExp(`[${restrictedCharacters.join('')}]`, 'g');
+
+  return key.replace(regex, '');
+};
+
 const convertOperation = (
   operation: Operations | FilterOperations,
 ): ComparisonOperator => {
@@ -843,7 +851,9 @@ class DynamoWrapper {
 
             // We have to add a unique key for each splitKey
             splitKeys.forEach((splitKey, index2) => {
-              const fullSplitKey = `${rootKey}split${index2}`;
+              const fullSplitKey = cleanDynamoOperationsKey(
+                `${rootKey}split${index2}`,
+              );
 
               ExpressionAttributeNames[`#${fullSplitKey}`] = splitKey;
 
@@ -853,7 +863,7 @@ class DynamoWrapper {
             // Join the keys back together so its nested again
             key = splitKeysFormatted.join('.#');
 
-            valueKey = splitKeys.join(''); // This is the key without the .
+            valueKey = cleanDynamoOperationsKey(splitKeys.join('')); // This is the key without the .
           } else {
             ExpressionAttributeNames[`#${key}`] = key;
           }
