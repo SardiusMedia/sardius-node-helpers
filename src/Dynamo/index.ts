@@ -720,16 +720,14 @@ class DynamoWrapper {
         }
 
         if (key.indexOf('.') > -1) {
-          const [rootKey] = key.split('.');
+          const [rootKey, subKey] = key.split('.');
 
           if (this.schema[rootKey]) {
             schema[rootKey] = this.schema[rootKey];
-            joiData[rootKey] = { value };
+            joiData[rootKey] = { [subKey]: value };
             delete joiData[key];
           }
-        }
-
-        if (this.schema[key]) {
+        } else if (this.schema[key]) {
           schema[key] = this.schema[key];
         }
       });
@@ -794,16 +792,19 @@ class DynamoWrapper {
   // it as a boolean
   async update(
     data: KeyValueAny,
-    options?: boolean | UpdateOptions,
+    rawOptions?: boolean | UpdateOptions,
   ): Promise<KeyValueAny> {
     let hasConditionals = false;
 
     try {
-      const shouldExist = options === true || (options && options.shouldExist);
+      const options = typeof rawOptions === 'object' ? rawOptions : {};
+      const shouldExist = rawOptions === true || options.shouldExist;
 
       const formattedData = this.formatData(data, 'update');
 
-      this.checkSchema(formattedData, 'update');
+      if (!options.skipJoiCheck) {
+        this.checkSchema(formattedData, 'update');
+      }
 
       const keys = this.getKeys(data[this.pk], data[this.sk]);
 
@@ -901,8 +902,7 @@ class DynamoWrapper {
       }
 
       // Conditional Option
-      const conditionalUpdates =
-        (typeof options === 'object' && options.conditionals) || [];
+      const conditionalUpdates = options.conditionals || [];
 
       if (conditionalUpdates.length > 0) {
         hasConditionals = true;
