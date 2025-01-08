@@ -813,4 +813,224 @@ describe('repositories/Dynamo/index', () => {
     const check = await db.query(0, 0);
     expect(check.Items.length).toEqual(0);
   });
+
+  it('should update with conditionals', async () => {
+    const db = new Dynamo('primary');
+
+    // Create an item with an sk number value of 0
+    const created = await db.create({
+      pk: 'conditionalPK',
+      sk: 'conditionalSK',
+      gsi1: 'conditionalGSI1',
+      key4: { key1: 'exists' },
+      numberKey: 5,
+    });
+
+    expect(created).toMatchSnapshot();
+
+    // Should fail since condition is wrong
+    try {
+      await db.update(
+        {
+          pk: 'conditionalPK',
+          sk: 'conditionalSK',
+          gsi1: 'conditionalGSI1',
+        },
+        {
+          conditionals: [
+            {
+              key: 'gsi1',
+              operation: '=',
+              value: 'conditionalGSI2',
+            },
+          ],
+        },
+      );
+    } catch (err) {
+      expect(err.message).toEqual('The conditional request failed');
+    }
+
+    const updateData = {
+      pk: 'conditionalPK',
+      sk: 'conditionalSK',
+      key5: [{ key1: 'equals' }],
+    };
+
+    // Equals condition should pass
+    const equalsResult = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'gsi1',
+          operation: '=',
+          value: 'conditionalGSI1',
+        },
+      ],
+    });
+
+    expect(equalsResult.key5).toEqual(updateData.key5);
+
+    // Greater Than condition should pass
+    updateData.key5 = [{ key1: '>' }];
+
+    const greaterResult = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'numberKey',
+          operation: '>',
+          value: 3,
+        },
+      ],
+    });
+
+    expect(greaterResult.key5).toEqual(updateData.key5);
+
+    // Greater Than or Equals condition should pass
+    updateData.key5 = [{ key1: '>=' }];
+
+    const greaterEqualsResult = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'numberKey',
+          operation: '>=',
+          value: 5,
+        },
+      ],
+    });
+
+    expect(greaterEqualsResult.key5).toEqual(updateData.key5);
+
+    // Less Than condition should pass
+    updateData.key5 = [{ key1: '<' }];
+
+    const lessResult = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'numberKey',
+          operation: '<',
+          value: 6,
+        },
+      ],
+    });
+
+    expect(lessResult.key5).toEqual(updateData.key5);
+
+    // Less Than or Equals condition should pass
+    updateData.key5 = [{ key1: '<=' }];
+
+    const lessEqualsResult = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'numberKey',
+          operation: '<=',
+          value: 5,
+        },
+      ],
+    });
+
+    expect(lessEqualsResult.key5).toEqual(updateData.key5);
+
+    // Exists condition should pass
+    updateData.key5 = [{ key1: 'exists' }];
+
+    const existsResult = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'key4.key1',
+          operation: 'attribute_exists',
+        },
+      ],
+    });
+
+    expect(existsResult.key5).toEqual(updateData.key5);
+
+    // Not Exists condition should pass
+    updateData.key5 = [{ key1: 'not exists' }];
+
+    const notExstsResult = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'key3',
+          operation: 'attribute_not_exists',
+        },
+      ],
+    });
+
+    expect(notExstsResult.key5).toEqual(updateData.key5);
+
+    // Attribute Type condition should pass
+    updateData.key5 = [{ key1: 'type' }];
+
+    const typeResult = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'key5',
+          operation: 'attribute_type',
+          value: 'array',
+        },
+      ],
+    });
+
+    expect(typeResult.key5).toEqual(updateData.key5);
+
+    // Begins With condition should pass
+    updateData.key5 = [{ key1: 'beginsWith' }];
+
+    const beginsWithResult = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'gsi1',
+          operation: 'begins_with',
+          value: 'conditional',
+        },
+      ],
+    });
+
+    expect(beginsWithResult.key5).toEqual(updateData.key5);
+
+    // Begins With condition should pass
+    updateData.key5 = [{ key1: 'contains' }];
+
+    const containsResult = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'gsi1',
+          operation: 'contains',
+          value: 'tional',
+        },
+      ],
+    });
+
+    expect(containsResult.key5).toEqual(updateData.key5);
+
+    // Size condition should pass
+    updateData.key5 = [{ key1: 'size' }];
+
+    const sizeResult = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'gsi1',
+          operation: 'size',
+          value: 15, // Length of 'conditionalGSI1'
+        },
+      ],
+    });
+
+    expect(sizeResult.key5).toEqual(updateData.key5);
+
+    // between condition should pass
+    updateData.key5 = [{ key1: 'between' }];
+
+    const betweenResult = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'numberKey',
+          operation: 'between',
+          value: 2,
+          value2: 10,
+        },
+      ],
+    });
+
+    expect(betweenResult.key5).toEqual(updateData.key5);
+  });
 });

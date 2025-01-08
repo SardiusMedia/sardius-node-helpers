@@ -113,3 +113,27 @@ export interface Options {
 export interface DBSetupOptions {
   timestamps?: boolean;
 }
+
+interface Conditional {
+  key: string;
+  operation:
+    | 'attribute_exists'
+    | 'attribute_not_exists'
+    | 'attribute_type'
+    | 'begins_with'
+    | 'contains'
+    | 'size'
+    | 'between'
+    | '='
+    | '<='
+    | '<'
+    | '>='
+    | '>';
+  value?: Pk | 'string' | 'number' | 'boolean' | 'array' | 'object';
+  value2?: Pk; // For between
+}
+
+export interface UpdateOptions {
+  shouldExist?: boolean;
+  conditionals?: Conditional[];
+}

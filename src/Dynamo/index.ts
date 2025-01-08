@@ -34,6 +34,7 @@ import {
   Filter,
   FilterOperations,
   DBSetupOptions,
+  UpdateOptions,
 } from './index.types';
 
 import sleep from '../helpers/sleep';
@@ -778,8 +779,18 @@ class DynamoWrapper {
     }
   }
 
-  async update(data: KeyValueAny, shouldExist?: boolean): Promise<KeyValueAny> {
+  // Options param used to be a "shouldExist" setting so we
+  // have backwards compatibility for any code still using
+  // it as a boolean
+  async update(
+    data: KeyValueAny,
+    options?: boolean | UpdateOptions,
+  ): Promise<KeyValueAny> {
+    let hasConditionals = false;
+
     try {
+      const shouldExist = options === true || (options && options.shouldExist);
+
       const formattedData = this.formatData(data, 'update');
 
       this.checkSchema(formattedData, 'update');
@@ -839,12 +850,126 @@ class DynamoWrapper {
 
       let ConditionExpression: UpdateItemCommand['input']['ConditionExpression'];
 
+      // Should Exists option
       if (shouldExist) {
         ConditionExpression = `attribute_exists(${this.pk})`;
 
         if (this.sk) {
           ConditionExpression += ` AND attribute_exists(${this.sk})`;
         }
+      }
+
+      // Conditional Option
+      const conditionalUpdates =
+        (typeof options === 'object' && options.conditionals) || [];
+
+      if (conditionalUpdates.length > 0) {
+        hasConditionals = true;
+
+        if (ConditionExpression && ConditionExpression.length > 0) {
+          ConditionExpression += ' AND ';
+        } else {
+          ConditionExpression = '';
+        }
+
+        ConditionExpression += conditionalUpdates
+          .map(data => {
+            const { key, operation, value, value2 } = data;
+
+            let formattedKey = `c_${key}`;
+
+            // Support nested keys
+            if (key.indexOf('.') > -1) {
+              const [cleanBeginning] = formattedKey.split('.');
+
+              formattedKey = cleanBeginning;
+
+              // Split the keys by the . so we can process them
+              const splitKeys = key.split('.');
+
+              const splitKeysFormatted: string[] = [];
+
+              // We have to add a unique key for each splitKey
+              splitKeys.forEach((splitKey, index2) => {
+                const fullSplitKey = `${formattedKey}split${index2}`;
+
+                ExpressionAttributeNames[`#${fullSplitKey}`] = splitKey;
+
+                splitKeysFormatted.push(fullSplitKey);
+              });
+
+              // Join the keys back together so its nested again
+              formattedKey = splitKeysFormatted.join('.#');
+            } else {
+              ExpressionAttributeNames[`#${formattedKey}`] = key;
+            }
+
+            if (value !== undefined) {
+              const dynamoConditionalData = marshall(
+                { value, value2 },
+                {
+                  removeUndefinedValues: true,
+                },
+              );
+
+              ExpressionAttributeValues[`:${formattedKey}`] =
+                dynamoConditionalData.value;
+
+              if (value2 !== undefined) {
+                ExpressionAttributeValues[`:${formattedKey}2`] =
+                  dynamoConditionalData.value2;
+              }
+            }
+
+            if (operation === 'between') {
+              return `#${formattedKey} BETWEEN :${formattedKey} AND :${formattedKey}2`;
+            }
+
+            if (operation === 'attribute_exists') {
+              return `attribute_exists(#${formattedKey})`;
+            }
+
+            if (operation === 'attribute_not_exists') {
+              return `attribute_not_exists(#${formattedKey})`;
+            }
+
+            if (operation === 'attribute_type') {
+              let formattedValue = '';
+
+              if (value === 'string') {
+                formattedValue = 'S';
+              } else if (value === 'number') {
+                formattedValue = 'N';
+              } else if (value === 'boolean') {
+                formattedValue = 'BOOL';
+              } else if (value === 'array') {
+                formattedValue = 'L';
+              } else if (value === 'object') {
+                formattedValue = 'M';
+              }
+
+              ExpressionAttributeValues[`:${formattedKey}`] = {
+                S: formattedValue,
+              };
+
+              return `attribute_type(#${formattedKey}, :${formattedKey})`;
+            }
+
+            if (operation === 'begins_with') {
+              return `begins_with(#${formattedKey}, :${formattedKey})`;
+            }
+
+            if (operation === 'contains') {
+              return `contains(#${formattedKey}, :${formattedKey})`;
+            }
+
+            if (operation === 'size') {
+              return `size(#${formattedKey}) = :${formattedKey}`;
+            }
+
+            return `#${formattedKey} ${operation} :${formattedKey}`;
+          })
+          .join(' AND ');
       }
 
       const updateConfig: UpdateItemCommandInput = {
@@ -874,7 +999,10 @@ class DynamoWrapper {
 
       return formattedResponse;
     } catch (err) {
-      if (err.message === 'The conditional request failed') {
+      if (
+        err.message === 'The conditional request failed' &&
+        !hasConditionals
+      ) {
         throw Error('This item already exists');
       } else {
         throw err;
