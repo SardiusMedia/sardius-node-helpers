@@ -871,10 +871,10 @@ class DynamoWrapper {
           ExpressionAttributeValues[`:${valueKey}`] = value;
 
           // If null or empty string, we want to remove from Dynamo
-          if (formattedData[key] === null || formattedData[key] === '') {
+          if (formattedData[rawKey] === null || formattedData[rawKey] === '') {
             removeExpressions.push(`#${key}`);
             delete ExpressionAttributeValues[`:${valueKey}`];
-          } else if (formattedData.incrementValues.indexOf(key) === -1) {
+          } else if (formattedData.incrementValues.indexOf(rawKey) === -1) {
             allExpressions.push(`#${key} = :${valueKey}`);
           } else {
             addExpressions.push(`#${key} :${valueKey}`);
