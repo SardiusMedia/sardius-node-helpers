@@ -1111,7 +1111,7 @@ describe('repositories/Dynamo/index', () => {
       key1: {
         key1Test: 'key1',
       },
-      key2: null,
+      key2: undefined,
     });
 
     // Should be able to use a key with hyphens
