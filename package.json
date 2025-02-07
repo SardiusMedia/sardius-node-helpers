@@ -1,6 +1,6 @@
 {
   "name": "sardius-node-helpers-wrapper",
-  "version": "1.0.37",
+  "version": "1.0.38",
   "description": "Has all the needed config files to run the typescript",
   "scripts": {
     "prepare": "husky install",
