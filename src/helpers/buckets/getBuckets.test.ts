@@ -20,10 +20,26 @@ const mockAccountS3Bucket = {
   endpointUrl: 'https://...',
 };
 
+const mockAccountS3BucketReadOnly = {
+  type: 's3',
+  id: 'c_id',
+  key: 'c_key',
+  secret: 'c_secret',
+  bucketName: 'testBucketReadOnly',
+  provider: 'lyvecloud',
+  region: 'us-west',
+  endpointUrl: 'https://...',
+  readOnly: true,
+};
+
 const mockAccount: any = {
   id: 'testAccount',
   storage: {
-    externalProviders: [mockAccountBBBucket, mockAccountS3Bucket],
+    externalProviders: [
+      mockAccountBBBucket,
+      mockAccountS3Bucket,
+      mockAccountS3BucketReadOnly,
+    ],
   },
 };
 
@@ -275,6 +291,43 @@ describe('src/helpers/buckets/getBuckets', () => {
       mockLCEnvBucket,
       mockAccountBBBucket,
       mockAccountS3Bucket,
+    ]);
+  });
+
+  it('should work with "all" setting and read only setting', async () => {
+    mockGetAccount.mockReturnValueOnce({
+      id: 'testAccount',
+      storage: {
+        buckets: [
+          {
+            type: 'default',
+            id: 'lc_assets',
+          },
+          {
+            type: 'default',
+            id: 'sj_assets',
+          },
+        ],
+        externalProviders: [
+          mockAccountBBBucket,
+          mockAccountS3Bucket,
+          mockAccountS3BucketReadOnly,
+        ],
+      },
+    });
+
+    const results = await getBuckets(mockAccount.id, ['all'], {
+      includeReadOnly: true,
+    });
+
+    expect(results).toEqual([
+      mockSJEnvBucket,
+      mockBBEnvBucket,
+      mockBBEUEnvBucket,
+      mockLCEnvBucket,
+      mockAccountBBBucket,
+      mockAccountS3Bucket,
+      mockAccountS3BucketReadOnly,
     ]);
   });
 });
