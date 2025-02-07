@@ -9,4 +9,5 @@ export default interface Bucket {
   secret: string;
   type: 'backblaze' | 's3';
   provider: 'backblaze' | 'lyvecloud' | 'storj';
+  readOnly?: boolean;
 }

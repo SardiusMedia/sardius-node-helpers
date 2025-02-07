@@ -16,9 +16,14 @@ interface AccountBuckets {
   id: string;
 }
 
+interface Options {
+  includeReadOnly?: boolean;
+}
+
 export default async (
   accountId: string,
   buckets: string[],
+  options?: Options,
 ): Promise<Bucket[]> => {
   await getAWSSecrets('transcode');
 
@@ -82,7 +87,14 @@ export default async (
   if (buckets.indexOf('all') > -1) {
     formattedBuckets = ['sj_assets', 'bb_assets', 'bb_assets-eu', 'lc_assets'];
 
-    externalProviders.forEach(bucket => formattedBuckets.push(bucket.id));
+    externalProviders.forEach(bucket => {
+      // If we do not have the readOnly option, then do not return readOnly buckets
+      if ((!options || !options.includeReadOnly) && bucket.readOnly) {
+        return;
+      }
+
+      formattedBuckets.push(bucket.id);
+    });
   }
 
   formattedBuckets.forEach(incomingBucketId => {
