@@ -192,6 +192,20 @@ describe('src/helpers/buckets/getBuckets', () => {
     }
   });
 
+  it('should fail if only disabled buckets are chosen', async () => {
+    process.env['lc_assets_disabled'] = 'true';
+
+    try {
+      await getBuckets(mockAccount.id, ['lc_assets']);
+
+      expect('should not').toEqual('get here');
+    } catch (err) {
+      expect(err.message).toEqual('No valid buckets found');
+    }
+
+    process.env['lc_assets_disabled'] = undefined;
+  });
+
   it('should not call account if environment variable was found', async () => {
     process.env[`externalProviders_${mockAccount.id}`] = JSON.stringify(
       mockAccount.storage.externalProviders,
@@ -204,6 +218,33 @@ describe('src/helpers/buckets/getBuckets', () => {
 
   it('should work with "default" setting and no account settings', async () => {
     const results = await getBuckets(mockAccount.id, ['default']);
+
+    expect(results).toEqual([
+      mockSJEnvBucket,
+      mockBBEnvBucket,
+      mockBBEUEnvBucket,
+      mockLCEnvBucket,
+    ]);
+  });
+
+  it('should work with a disabled bucket', async () => {
+    process.env['lc_assets_disabled'] = 'true';
+    process.env['bb_assets-eu_disabled'] = 'true';
+
+    const results = await getBuckets(mockAccount.id, ['default']);
+
+    process.env['lc_assets_disabled'] = undefined;
+    process.env['bb_assets-eu_disabled'] = undefined;
+
+    expect(results).toEqual([mockSJEnvBucket, mockBBEnvBucket]);
+  });
+
+  it('should not be able to disable Storj', async () => {
+    process.env['sj_assets_disabled'] = 'true';
+
+    const results = await getBuckets(mockAccount.id, ['default']);
+
+    process.env['sj_assets_disabled'] = undefined;
 
     expect(results).toEqual([
       mockSJEnvBucket,
@@ -290,6 +331,38 @@ describe('src/helpers/buckets/getBuckets', () => {
       mockBBEUEnvBucket,
       mockLCEnvBucket,
       mockAccountBBBucket,
+      mockAccountS3Bucket,
+    ]);
+  });
+
+  it('should work with "all" setting and custom account buckets but one is disabled', async () => {
+    mockGetAccount.mockReturnValueOnce({
+      id: 'testAccount',
+      storage: {
+        buckets: [
+          {
+            type: 'default',
+            id: 'lc_assets',
+          },
+          {
+            type: 'default',
+            id: 'sj_assets',
+          },
+        ],
+        externalProviders: [
+          { ...mockAccountBBBucket, disabled: true },
+          mockAccountS3Bucket,
+        ],
+      },
+    });
+
+    const results = await getBuckets(mockAccount.id, ['all']);
+
+    expect(results).toEqual([
+      mockSJEnvBucket,
+      mockBBEnvBucket,
+      mockBBEUEnvBucket,
+      mockLCEnvBucket,
       mockAccountS3Bucket,
     ]);
   });

@@ -10,4 +10,5 @@ export default interface Bucket {
   type: 'backblaze' | 's3';
   provider: 'backblaze' | 'lyvecloud' | 'storj';
   readOnly?: boolean;
+  disabled?: boolean;
 }

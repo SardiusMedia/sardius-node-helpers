@@ -1,6 +1,6 @@
 {
   "name": "sardius-node-helpers",
-  "version": "1.0.38",
+  "version": "1.0.39",
   "description": "Common functions and wrappers used in Sardius APIs",
   "scripts": {},
   "license": "MIT",
