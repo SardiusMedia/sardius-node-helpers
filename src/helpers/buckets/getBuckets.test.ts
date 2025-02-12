@@ -239,6 +239,21 @@ describe('src/helpers/buckets/getBuckets', () => {
     expect(results).toEqual([mockSJEnvBucket, mockBBEnvBucket]);
   });
 
+  it('should not be able to disable Storj', async () => {
+    process.env['sj_assets_disabled'] = 'true';
+
+    const results = await getBuckets(mockAccount.id, ['default']);
+
+    process.env['sj_assets_disabled'] = undefined;
+
+    expect(results).toEqual([
+      mockSJEnvBucket,
+      mockBBEnvBucket,
+      mockBBEUEnvBucket,
+      mockLCEnvBucket,
+    ]);
+  });
+
   it('should work with "default" setting and custom account buckets', async () => {
     mockGetAccount.mockReturnValueOnce({
       id: 'testAccount',
