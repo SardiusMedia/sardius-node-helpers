@@ -3,10 +3,38 @@ import {
   GetSecretValueCommand,
 } from '@aws-sdk/client-secrets-manager';
 
-const getAwsSecrets = async (whichSecret: string): Promise<void> => {
+interface Options {
+  expires?: number;
+}
+
+const getAwsSecrets = async (
+  whichSecret: string,
+  options?: Options,
+): Promise<void> => {
+  const lastLoaded = process.env[`${whichSecret}_loaded`] || '';
+
   // If this plugin has ran once before, don't run again
-  if (process.env[`${whichSecret}_loaded`] === '1') {
-    return undefined;
+  if (lastLoaded) {
+    let shouldRefetch = false;
+
+    // Allow for the refetching of a secret if it's expired
+    if (options && options.expires) {
+      try {
+        const lastLoadedAsNumber = parseInt(lastLoaded, 10);
+
+        const now = Date.now();
+
+        if (now - lastLoadedAsNumber > options.expires) {
+          shouldRefetch = true;
+        }
+      } catch (err) {
+        // Do nothing with error
+      }
+    }
+
+    if (!shouldRefetch) {
+      return undefined;
+    }
   }
 
   // This determines which secret to pull from AWS
@@ -38,7 +66,7 @@ const getAwsSecrets = async (whichSecret: string): Promise<void> => {
     }
 
     // Set a variable so we don't run this function again
-    process.env[`${whichSecret}_loaded`] = '1';
+    process.env[`${whichSecret}_loaded`] = Date.now().toString();
 
     return undefined;
   } catch (err) {
