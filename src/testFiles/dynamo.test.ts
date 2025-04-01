@@ -43,6 +43,39 @@ describe('repositories/Dynamo/index', () => {
     expect(result3).toEqual({ ...data, sk: 'sk_key2' });
   });
 
+  it('create works with timestampsUpdatedAtOnCreate', async () => {
+    // test option
+    const dbOption = new Dynamo('primary', {
+      timestamps: true,
+      timestampsUpdatedAtOnCreate: true,
+    });
+
+    const dataOption = {
+      pk: 'pk_keyTimestampsTest1',
+      sk: 'sk_keyTimestampsTest1',
+      gsi1: 'gsi_keyTimestampsTest1',
+    };
+
+    const resultOption = await dbOption.create(dataOption);
+
+    expect(resultOption.updatedAt).toBeTruthy();
+    expect(resultOption.createdAt).toBeTruthy();
+
+    // text model
+    const db = new Dynamo('timestampsTest');
+
+    const data = {
+      pk: 'pk_keyTimestampsTest2',
+      sk: 'sk_keyTimestampsTest2',
+      gsi1: 'gsi_keyTimestampsTest2',
+    };
+
+    const result = await db.create(data);
+
+    expect(result.updatedAt).toBeTruthy();
+    expect(result.createdAt).toBeTruthy();
+  });
+
   it('create fails as expected', async () => {
     const db = new Dynamo('primary');
 

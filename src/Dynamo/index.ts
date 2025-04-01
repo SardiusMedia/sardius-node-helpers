@@ -177,6 +177,8 @@ class DynamoWrapper {
   schema: Record<string, Joi.Schema>;
   indexNames: string[];
   timestamps: boolean;
+  timestampsUpdatedAtOnCreate?: boolean;
+
   private mainIndex: DynamoDBClient;
 
   private indexesByName: {
@@ -194,6 +196,9 @@ class DynamoWrapper {
     this.model = schema.table;
     this.schema = schema.schema;
     this.timestamps = options?.timestamps || this.model.timestamps;
+    this.timestampsUpdatedAtOnCreate =
+      options?.timestampsUpdatedAtOnCreate ||
+      this.model.timestampsUpdatedAtOnCreate;
 
     this.indexesByName = {};
     this.indexNames = schema.table.indexes.map((index: Index) => index.name);
@@ -671,10 +676,15 @@ class DynamoWrapper {
     });
 
     if (this.timestamps) {
+      const currentDate = new Date().toISOString();
       if (method === 'create') {
-        formattedData.createdAt = new Date().toISOString();
+        formattedData.createdAt = currentDate;
+
+        if (this.timestampsUpdatedAtOnCreate) {
+          formattedData.updatedAt = currentDate;
+        }
       } else if (method === 'update') {
-        formattedData.updatedAt = new Date().toISOString();
+        formattedData.updatedAt = currentDate;
       }
     }
 
@@ -744,6 +754,7 @@ class DynamoWrapper {
     if (this.timestamps) {
       if (method === 'create') {
         schema.createdAt = Joi.string();
+        schema.updatedAt = Joi.string();
       } else if (method === 'update') {
         schema.createdAt = Joi.string();
         schema.updatedAt = Joi.string();

@@ -6,6 +6,7 @@ export interface DynamoDbTable {
   hashKey: string | number;
   rangeKey: string | number;
   timestamps: boolean;
+  timestampsUpdatedAtOnCreate?: boolean;
   tableName: string;
   indexes: Array<{
     hashKey: string;
@@ -112,6 +113,7 @@ export interface Options {
 
 export interface DBSetupOptions {
   timestamps?: boolean;
+  timestampsUpdatedAtOnCreate?: boolean;
 }
 
 interface Conditional {
