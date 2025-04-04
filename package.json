@@ -1,6 +1,6 @@
 {
   "name": "sardius-node-helpers-wrapper",
-  "version": "1.0.40",
+  "version": "1.0.41",
   "description": "Has all the needed config files to run the typescript",
   "scripts": {
     "prepare": "husky install",
@@ -55,6 +55,7 @@
     "@aws-sdk/util-dynamodb": "3.417.0",
     "@aws-sdk/s3-request-presigner": "3.521.0",
     "axios": "1.5.0",
+    "axios-retry": "3.9.1",
     "joi": "17.10.2"
   }
 }
