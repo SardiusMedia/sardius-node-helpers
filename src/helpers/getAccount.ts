@@ -1,6 +1,16 @@
 import KeyValueAny from '../common/tsModels/keyValueAny';
 import invokeLambda from './invokeLambda';
 
+interface DefaultCronSettings {
+  enabled: boolean;
+  days?: number[];
+  [key: string]: any;
+}
+
+interface Cron {
+  [key: string]: DefaultCronSettings;
+}
+
 interface Account {
   access: string[];
   accountManager: boolean;
@@ -53,6 +63,7 @@ interface Account {
   tier: string;
   trial: number;
   youbora: KeyValueAny;
+  cron?: Cron;
 }
 
 const getAccount = async (accountId: string): Promise<Account> => {
