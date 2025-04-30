@@ -963,6 +963,27 @@ describe('repositories/Dynamo/index', () => {
 
     expect(lessEqualsResult.key5).toEqual(updateData.key5);
 
+    // Conditional check on value to update should pass
+    // This seems to work on the base level, but not nested
+    const conditionalCheckOnValueToUpdateResult = await db.update(
+      {
+        pk: 'conditionalPK',
+        sk: 'conditionalSK',
+        numberKey: 4,
+      },
+      {
+        conditionals: [
+          {
+            key: 'numberKey',
+            operation: '=',
+            value: 5,
+          },
+        ],
+      },
+    );
+
+    expect(conditionalCheckOnValueToUpdateResult.numberKey).toEqual(4);
+
     // Exists condition should pass
     updateData.key5 = [{ key1: 'exists' }];
 
