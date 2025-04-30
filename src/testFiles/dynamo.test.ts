@@ -1177,4 +1177,202 @@ describe('repositories/Dynamo/index', () => {
 
     expect(results).toMatchSnapshot();
   });
+
+  it('should update nested array element', async () => {
+    const db = new Dynamo('primary');
+
+    // Create an item with a nested array
+    const created = await db.create({
+      pk: 'nestedArrayPK',
+      sk: 'nestedArraySK',
+      gsi1: 'nestedArrayGSI1',
+      key5: [
+        { id: 'input1', status: 'active' },
+        { id: 'input2', status: 'inactive' },
+        { id: 'input3', status: 'active' },
+        { id: 'input4', status: 'inactive' },
+      ],
+    });
+
+    expect(created).toMatchSnapshot();
+
+    // Update the status of key5[3]
+    const updateData = {
+      pk: 'nestedArrayPK',
+      sk: 'nestedArraySK',
+      'key5[3]': { id: 'input4', status: 'active' },
+    };
+
+    const result = await db.update(updateData, { skipJoiCheck: true });
+
+    expect(result.key5[3]).toEqual({
+      id: 'input4',
+      status: 'active',
+    });
+    expect(result.key5[0]).toEqual({
+      id: 'input1',
+      status: 'active',
+    });
+    expect(result.key5).toHaveLength(4);
+  });
+
+  it('should update deeply nested array element field', async () => {
+    const db = new Dynamo('primary');
+
+    // Create an item with a deeply nested array
+    const created = await db.create({
+      pk: 'deepNestedArrayPK',
+      sk: 'deepNestedArraySK',
+      gsi1: 'deepNestedArrayGSI1',
+      key5: [
+        { id: 'input1', status: 'active', metadata: { field: 'value1' } },
+        { id: 'input2', status: 'inactive', metadata: { field: 'value2' } },
+        { id: 'input3', status: 'active', metadata: { field: 'value3' } },
+        { id: 'input4', status: 'inactive', metadata: { field: 'value4' } },
+      ],
+    });
+
+    expect(created).toMatchSnapshot();
+
+    // Update the metadata.field of key5[3]
+    const updateData = {
+      pk: 'deepNestedArrayPK',
+      sk: 'deepNestedArraySK',
+      'key5[3].metadata.field': 'updatedValue',
+    };
+
+    const result = await db.update(updateData, { skipJoiCheck: true });
+
+    expect(result.key5[3].metadata.field).toEqual('updatedValue');
+    expect(result.key5[0]).toEqual({
+      id: 'input1',
+      status: 'active',
+      metadata: { field: 'value1' },
+    });
+    expect(result.key5).toHaveLength(4);
+  });
+
+  it('should update nested object array element status', async () => {
+    const db = new Dynamo('primary');
+
+    // Create an item with a nested object containing an array
+    const created = await db.create({
+      pk: 'nestedObjectArrayPK',
+      sk: 'nestedObjectArraySK',
+      gsi1: 'nestedObjectArrayGSI1',
+      key4: {
+        key5: [
+          { id: 'input1', status: 'active' },
+          { id: 'input2', status: 'inactive' },
+          { id: 'input3', status: 'active' },
+          { id: 'input4', status: 'inactive' },
+        ],
+      },
+    });
+
+    expect(created).toMatchSnapshot();
+
+    // Update the status of key4.key5[3]
+    const updateData = {
+      pk: 'nestedObjectArrayPK',
+      sk: 'nestedObjectArraySK',
+      'key4.key5[3].status': 'active',
+    };
+
+    const result = await db.update(updateData, { skipJoiCheck: true });
+
+    expect(result.key4.key5[3].status).toEqual('active');
+    expect(result.key4.key5[0]).toEqual({
+      id: 'input1',
+      status: 'active',
+    });
+    expect(result.key4.key5).toHaveLength(4);
+  });
+
+  it('should update with complex nested conditionals', async () => {
+    const db = new Dynamo('primary');
+
+    // Create an item with a nested object containing an array
+    const created = await db.create({
+      pk: 'complexConditionalPK',
+      sk: 'complexConditionalSK',
+      gsi1: 'complexConditionalGSI1',
+      key4: {
+        key5: [
+          { id: 'input1', status: 'active' },
+          { id: 'input2', status: 'inactive' },
+          { id: 'input3', status: 'active' },
+          { id: 'input4', status: 'inactive' },
+        ],
+      },
+    });
+
+    expect(created).toMatchSnapshot();
+
+    // Update key4.key5[3].status with complex conditionals
+    const updateData = {
+      pk: 'complexConditionalPK',
+      sk: 'complexConditionalSK',
+      'key4.key5[3].status': 'active',
+    };
+
+    const conditionals: any = [
+      {
+        key: 'key4.key5[3].status',
+        operation: 'attribute_exists',
+      },
+      {
+        key: 'key4.key5[3].status',
+        operation: '=',
+        value: 'inactive',
+      },
+      {
+        key: 'key4.key5[0].id',
+        operation: 'contains',
+        value: 'input1',
+      },
+    ];
+
+    const result = await db.update(updateData, {
+      skipJoiCheck: true,
+      conditionals,
+    });
+
+    expect(result.key4.key5[3].status).toEqual('active');
+    expect(result.key4.key5[0]).toEqual({
+      id: 'input1',
+      status: 'active',
+    });
+    expect(result.key4.key5).toHaveLength(4);
+
+    // Test that update fails when conditions are not met
+    // Create an item without key4.key5[3].status
+    await db.create({
+      pk: 'failConditionalPK',
+      sk: 'failConditionalSK',
+      gsi1: 'failConditionalGSI1',
+      key4: {
+        key5: [
+          { id: 'input1', status: 'active' },
+          { id: 'input2', status: 'inactive' },
+          { id: 'input3', status: 'active' },
+          { id: 'input4' }, // No status field
+        ],
+      },
+    });
+
+    await expect(
+      db.update(
+        {
+          pk: 'failConditionalPK',
+          sk: 'failConditionalSK',
+          'key4.key5[3].status': 'active',
+        },
+        {
+          skipJoiCheck: true,
+          conditionals,
+        },
+      ),
+    ).rejects.toThrow('The conditional request failed');
+  });
 });

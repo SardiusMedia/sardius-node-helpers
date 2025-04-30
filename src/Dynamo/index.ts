@@ -806,6 +806,42 @@ class DynamoWrapper {
     }
   }
 
+  // Helper function to parse nested paths, including array indices
+  private parseAttributePath(rawKey: string): {
+    expressionKey: string;
+    valueKey: string;
+    attributeNames: { [key: string]: string };
+  } {
+    const attributeNames: { [key: string]: string } = {};
+    const parts = rawKey.split('.');
+    const formattedParts: string[] = [];
+    let valueKey = '';
+
+    parts.forEach((part, index) => {
+      // Handle array indices (e.g., [3])
+      const match = part.match(/^(\w+)\[(\d+)\]$/);
+      if (match) {
+        const baseKey = match[1];
+        const arrayIndex = match[2];
+        const uniqueKey = cleanDynamoOperationsKey(`${baseKey}_${index}`);
+        attributeNames[`#${uniqueKey}`] = baseKey;
+        formattedParts.push(`#${uniqueKey}[${arrayIndex}]`);
+        valueKey += baseKey + arrayIndex;
+      } else {
+        const uniqueKey = cleanDynamoOperationsKey(`${part}_${index}`);
+        attributeNames[`#${uniqueKey}`] = part;
+        formattedParts.push(`#${uniqueKey}`);
+        valueKey += part;
+      }
+    });
+
+    return {
+      expressionKey: formattedParts.join('.'),
+      valueKey: cleanDynamoOperationsKey(valueKey),
+      attributeNames,
+    };
+  }
+
   // Options param used to be a "shouldExist" setting so we
   // have backwards compatibility for any code still using
   // it as a boolean
@@ -849,46 +885,23 @@ class DynamoWrapper {
         ) {
           const value = dynamoFormatData[rawKey];
 
-          let key = rawKey;
-          let valueKey = rawKey;
+          const { expressionKey, valueKey, attributeNames } =
+            this.parseAttributePath(rawKey);
 
-          if (key.indexOf('.') > -1) {
-            // Split the keys by the . so we can process them
-            const splitKeys = key.split('.');
-
-            const rootKey = splitKeys[0];
-
-            const splitKeysFormatted: string[] = [];
-
-            // We have to add a unique key for each splitKey
-            splitKeys.forEach((splitKey, index2) => {
-              const fullSplitKey = cleanDynamoOperationsKey(
-                `${rootKey}split${index2}`,
-              );
-
-              ExpressionAttributeNames[`#${fullSplitKey}`] = splitKey;
-
-              splitKeysFormatted.push(fullSplitKey);
-            });
-
-            // Join the keys back together so its nested again
-            key = splitKeysFormatted.join('.#');
-
-            valueKey = cleanDynamoOperationsKey(splitKeys.join('')); // This is the key without the .
-          } else {
-            ExpressionAttributeNames[`#${key}`] = key;
-          }
-
-          ExpressionAttributeValues[`:${valueKey}`] = value;
+          Object.assign(ExpressionAttributeNames, attributeNames);
 
           // If null or empty string, we want to remove from Dynamo
           if (formattedData[rawKey] === null || formattedData[rawKey] === '') {
-            removeExpressions.push(`#${key}`);
-            delete ExpressionAttributeValues[`:${valueKey}`];
-          } else if (formattedData.incrementValues.indexOf(rawKey) === -1) {
-            allExpressions.push(`#${key} = :${valueKey}`);
+            removeExpressions.push(expressionKey);
           } else {
-            addExpressions.push(`#${key} :${valueKey}`);
+            ExpressionAttributeValues[`:${valueKey}`] = value;
+            // Use ADD for keys in incrementValues (e.g., numberKey with $add), otherwise SET
+            const incrementValues = formattedData.incrementValues || [];
+            if (incrementValues.indexOf(rawKey) === -1) {
+              allExpressions.push(`${expressionKey} = :${valueKey}`);
+            } else {
+              addExpressions.push(`${expressionKey} :${valueKey}`);
+            }
           }
         }
       });
@@ -938,33 +951,27 @@ class DynamoWrapper {
           .map(data => {
             const { key, operation, value, value2 } = data;
 
-            let formattedKey = `c_${key}`;
+            let expressionKey: string;
+            let valueKey: string;
+            let attributeNames: { [key: string]: string };
 
-            // Support nested keys
-            if (key.indexOf('.') > -1) {
-              const [cleanBeginning] = formattedKey.split('.');
-
-              formattedKey = cleanBeginning;
-
-              // Split the keys by the . so we can process them
-              const splitKeys = key.split('.');
-
-              const splitKeysFormatted: string[] = [];
-
-              // We have to add a unique key for each splitKey
-              splitKeys.forEach((splitKey, index2) => {
-                const fullSplitKey = `${formattedKey}split${index2}`;
-
-                ExpressionAttributeNames[`#${fullSplitKey}`] = splitKey;
-
-                splitKeysFormatted.push(fullSplitKey);
-              });
-
-              // Join the keys back together so its nested again
-              formattedKey = splitKeysFormatted.join('.#');
+            // For attribute_type, use simple key formatting to avoid parsing issues
+            if (operation === 'attribute_type') {
+              const cleanKey = cleanDynamoOperationsKey(key);
+              expressionKey = `#${cleanKey}`;
+              valueKey = cleanKey;
+              attributeNames = { [`#${cleanKey}`]: key };
             } else {
-              ExpressionAttributeNames[`#${formattedKey}`] = key;
+              const parsed = this.parseAttributePath(key);
+              expressionKey = parsed.expressionKey;
+              valueKey = parsed.valueKey;
+              attributeNames = parsed.attributeNames;
             }
+
+            Object.assign(ExpressionAttributeNames, attributeNames);
+
+            // Use unique value key for conditionals to avoid conflicts with update values
+            const condValueKey = `cond_${valueKey}`;
 
             if (value !== undefined) {
               const dynamoConditionalData = marshall(
@@ -974,25 +981,25 @@ class DynamoWrapper {
                 },
               );
 
-              ExpressionAttributeValues[`:${formattedKey}`] =
+              ExpressionAttributeValues[`:${condValueKey}`] =
                 dynamoConditionalData.value;
 
               if (value2 !== undefined) {
-                ExpressionAttributeValues[`:${formattedKey}2`] =
+                ExpressionAttributeValues[`:${condValueKey}2`] =
                   dynamoConditionalData.value2;
               }
             }
 
             if (operation === 'between') {
-              return `#${formattedKey} BETWEEN :${formattedKey} AND :${formattedKey}2`;
+              return `${expressionKey} BETWEEN :${condValueKey} AND :${condValueKey}2`;
             }
 
             if (operation === 'attribute_exists') {
-              return `attribute_exists(#${formattedKey})`;
+              return `attribute_exists(${expressionKey})`;
             }
 
             if (operation === 'attribute_not_exists') {
-              return `attribute_not_exists(#${formattedKey})`;
+              return `attribute_not_exists(${expressionKey})`;
             }
 
             if (operation === 'attribute_type') {
@@ -1010,26 +1017,26 @@ class DynamoWrapper {
                 formattedValue = 'M';
               }
 
-              ExpressionAttributeValues[`:${formattedKey}`] = {
+              ExpressionAttributeValues[`:${condValueKey}`] = {
                 S: formattedValue,
               };
 
-              return `attribute_type(#${formattedKey}, :${formattedKey})`;
+              return `attribute_type(${expressionKey}, :${condValueKey})`;
             }
 
             if (operation === 'begins_with') {
-              return `begins_with(#${formattedKey}, :${formattedKey})`;
+              return `begins_with(${expressionKey}, :${condValueKey})`;
             }
 
             if (operation === 'contains') {
-              return `contains(#${formattedKey}, :${formattedKey})`;
+              return `contains(${expressionKey}, :${condValueKey})`;
             }
 
             if (operation === 'size') {
-              return `size(#${formattedKey}) = :${formattedKey}`;
+              return `size(${expressionKey}) = :${condValueKey}`;
             }
 
-            return `#${formattedKey} ${operation} :${formattedKey}`;
+            return `${expressionKey} ${operation} :${condValueKey}`;
           })
           .join(' AND ');
       }
