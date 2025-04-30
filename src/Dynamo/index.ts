@@ -40,11 +40,13 @@ import {
 import sleep from '../helpers/sleep';
 
 const cleanDynamoOperationsKey = (key: string): string => {
-  const restrictedCharacters = ['-'];
+  const restrictedCharacters = ['-', '\\[', '\\]'];
 
   const regex = new RegExp(`[${restrictedCharacters.join('')}]`, 'g');
 
-  return key.replace(regex, '');
+  const result = key.replace(regex, '');
+
+  return result;
 };
 
 const convertOperation = (
@@ -168,6 +170,83 @@ const convertOperationToExpression = (
   }
 
   throw Error('Invalid operation');
+};
+
+const processKey = (
+  incomingKey: string,
+  options?: {
+    isConditional?: boolean;
+  },
+): {
+  formattedKey: string;
+  AttributeNames: UpdateItemCommand['input']['ExpressionAttributeNames'];
+  valueKey: string;
+} => {
+  let key = incomingKey;
+  let valueKey = incomingKey;
+  const AttributeNames: UpdateItemCommand['input']['ExpressionAttributeNames'] =
+    {};
+
+  if (key.indexOf('.') > -1) {
+    // Split the keys by the . so we can process them
+    const splitKeys = key.split('.');
+
+    const rootKey = splitKeys[0];
+
+    const splitKeysFormatted: string[] = [];
+
+    // We have to add a unique key for each splitKey
+    splitKeys.forEach((rawSplitKey, index2) => {
+      let splitKey = rawSplitKey;
+      let foundIndex = -1;
+
+      // Lets do a check to see if our key is trying to find
+      // a nested element by index. If so, we need to remove those
+      // characters from the key, but keep it in the updateExpression.
+      // AKA Dynamo does not like [0] in the ExpressionAttributeNames
+      const match = splitKey.match(/^(\w+)\[(\d+)\]$/);
+
+      // If we have a match, then we need to remove the [0] from the key
+      // but keep it for later
+      if (match && match[2] !== undefined) {
+        splitKey = match[1];
+        foundIndex = parseInt(match[2], 10);
+      }
+
+      let fullSplitKey = cleanDynamoOperationsKey(`${rootKey}split${index2}`);
+
+      if (options?.isConditional) {
+        fullSplitKey = `c_${fullSplitKey}`;
+      }
+
+      AttributeNames[`#${fullSplitKey}`] = splitKey;
+
+      // IMPORTANT to keep this AFTER the ExpressionAttributeNames b/c
+      // ExpressionAttributeNames doesn't like having the characters [ and ]
+      if (foundIndex > -1) {
+        fullSplitKey = `${fullSplitKey}[${foundIndex}]`;
+      }
+
+      splitKeysFormatted.push(fullSplitKey);
+    });
+
+    // Join the keys back together so its nested again
+    key = splitKeysFormatted.join('.#');
+
+    valueKey = cleanDynamoOperationsKey(splitKeys.join('')); // This is the key without the .
+  } else {
+    AttributeNames[`#${key}`] = key;
+  }
+
+  if (options?.isConditional) {
+    valueKey = `c_${valueKey}`;
+  }
+
+  return {
+    formattedKey: key,
+    AttributeNames,
+    valueKey,
+  };
 };
 
 class DynamoWrapper {
@@ -849,35 +928,13 @@ class DynamoWrapper {
         ) {
           const value = dynamoFormatData[rawKey];
 
-          let key = rawKey;
-          let valueKey = rawKey;
+          const {
+            formattedKey: key,
+            AttributeNames,
+            valueKey,
+          } = processKey(rawKey);
 
-          if (key.indexOf('.') > -1) {
-            // Split the keys by the . so we can process them
-            const splitKeys = key.split('.');
-
-            const rootKey = splitKeys[0];
-
-            const splitKeysFormatted: string[] = [];
-
-            // We have to add a unique key for each splitKey
-            splitKeys.forEach((splitKey, index2) => {
-              const fullSplitKey = cleanDynamoOperationsKey(
-                `${rootKey}split${index2}`,
-              );
-
-              ExpressionAttributeNames[`#${fullSplitKey}`] = splitKey;
-
-              splitKeysFormatted.push(fullSplitKey);
-            });
-
-            // Join the keys back together so its nested again
-            key = splitKeysFormatted.join('.#');
-
-            valueKey = cleanDynamoOperationsKey(splitKeys.join('')); // This is the key without the .
-          } else {
-            ExpressionAttributeNames[`#${key}`] = key;
-          }
+          Object.assign(ExpressionAttributeNames, AttributeNames);
 
           ExpressionAttributeValues[`:${valueKey}`] = value;
 
@@ -938,33 +995,11 @@ class DynamoWrapper {
           .map(data => {
             const { key, operation, value, value2 } = data;
 
-            let formattedKey = `c_${key}`;
+            const { formattedKey, AttributeNames, valueKey } = processKey(key, {
+              isConditional: true,
+            });
 
-            // Support nested keys
-            if (key.indexOf('.') > -1) {
-              const [cleanBeginning] = formattedKey.split('.');
-
-              formattedKey = cleanBeginning;
-
-              // Split the keys by the . so we can process them
-              const splitKeys = key.split('.');
-
-              const splitKeysFormatted: string[] = [];
-
-              // We have to add a unique key for each splitKey
-              splitKeys.forEach((splitKey, index2) => {
-                const fullSplitKey = `${formattedKey}split${index2}`;
-
-                ExpressionAttributeNames[`#${fullSplitKey}`] = splitKey;
-
-                splitKeysFormatted.push(fullSplitKey);
-              });
-
-              // Join the keys back together so its nested again
-              formattedKey = splitKeysFormatted.join('.#');
-            } else {
-              ExpressionAttributeNames[`#${formattedKey}`] = key;
-            }
+            Object.assign(ExpressionAttributeNames, AttributeNames);
 
             if (value !== undefined) {
               const dynamoConditionalData = marshall(
@@ -974,17 +1009,17 @@ class DynamoWrapper {
                 },
               );
 
-              ExpressionAttributeValues[`:${formattedKey}`] =
+              ExpressionAttributeValues[`:${valueKey}`] =
                 dynamoConditionalData.value;
 
               if (value2 !== undefined) {
-                ExpressionAttributeValues[`:${formattedKey}2`] =
+                ExpressionAttributeValues[`:${valueKey}2`] =
                   dynamoConditionalData.value2;
               }
             }
 
             if (operation === 'between') {
-              return `#${formattedKey} BETWEEN :${formattedKey} AND :${formattedKey}2`;
+              return `#${formattedKey} BETWEEN :${valueKey} AND :${valueKey}2`;
             }
 
             if (operation === 'attribute_exists') {
@@ -1010,26 +1045,26 @@ class DynamoWrapper {
                 formattedValue = 'M';
               }
 
-              ExpressionAttributeValues[`:${formattedKey}`] = {
+              ExpressionAttributeValues[`:${valueKey}`] = {
                 S: formattedValue,
               };
 
-              return `attribute_type(#${formattedKey}, :${formattedKey})`;
+              return `attribute_type(#${formattedKey}, :${valueKey})`;
             }
 
             if (operation === 'begins_with') {
-              return `begins_with(#${formattedKey}, :${formattedKey})`;
+              return `begins_with(#${formattedKey}, :${valueKey})`;
             }
 
             if (operation === 'contains') {
-              return `contains(#${formattedKey}, :${formattedKey})`;
+              return `contains(#${formattedKey}, :${valueKey})`;
             }
 
             if (operation === 'size') {
-              return `size(#${formattedKey}) = :${formattedKey}`;
+              return `size(#${formattedKey}) = :${valueKey}`;
             }
 
-            return `#${formattedKey} ${operation} :${formattedKey}`;
+            return `#${formattedKey} ${operation} :${valueKey}`;
           })
           .join(' AND ');
       }
