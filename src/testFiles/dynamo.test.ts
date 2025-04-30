@@ -855,6 +855,7 @@ describe('repositories/Dynamo/index', () => {
       pk: 'conditionalPK',
       sk: 'conditionalSK',
       gsi1: 'conditionalGSI1',
+      key3: true,
       key4: { key1: 'exists', 'key1-test': 'exists2' },
       numberKey: 5,
     });
@@ -998,7 +999,7 @@ describe('repositories/Dynamo/index', () => {
     const notExstsResult = await db.update(updateData, {
       conditionals: [
         {
-          key: 'key3',
+          key: 'key6',
           operation: 'attribute_not_exists',
         },
       ],
@@ -1006,10 +1007,70 @@ describe('repositories/Dynamo/index', () => {
 
     expect(notExstsResult.key5).toEqual(updateData.key5);
 
-    // Attribute Type condition should pass
-    updateData.key5 = [{ key1: 'type' }];
+    // Attribute Type condition should pass with number
+    updateData.key5 = [{ key1: 'typeNumber' }];
 
-    const typeResult = await db.update(updateData, {
+    const typeResultNumber = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'numberKey',
+          operation: 'attribute_type',
+          value: 'number',
+        },
+      ],
+    });
+
+    expect(typeResultNumber.key5).toEqual(updateData.key5);
+
+    // // Attribute Type condition should pass with string
+    updateData.key5 = [{ key1: 'typeString' }];
+
+    const typeResultString = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'gsi1',
+          operation: 'attribute_type',
+          value: 'string',
+        },
+      ],
+    });
+
+    expect(typeResultString.key5).toEqual(updateData.key5);
+
+    // // Attribute Type condition should pass with boolean
+    updateData.key5 = [{ key1: 'typeBoolean' }];
+
+    const typeResultBoolean = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'key3',
+          operation: 'attribute_type',
+          value: 'boolean',
+        },
+      ],
+    });
+
+    expect(typeResultBoolean.key5).toEqual(updateData.key5);
+
+    // // Attribute Type condition should pass with object
+    updateData.key5 = [{ key1: 'typeObject' }];
+
+    const typeResultObject = await db.update(updateData, {
+      conditionals: [
+        {
+          key: 'key4',
+          operation: 'attribute_type',
+          value: 'object',
+        },
+      ],
+    });
+
+    expect(typeResultObject.key5).toEqual(updateData.key5);
+
+    // Attribute Type condition should pass with array
+    updateData.key5 = [{ key1: 'typeArray' }];
+
+    const typeResultArray = await db.update(updateData, {
       conditionals: [
         {
           key: 'key5',
@@ -1019,7 +1080,7 @@ describe('repositories/Dynamo/index', () => {
       ],
     });
 
-    expect(typeResult.key5).toEqual(updateData.key5);
+    expect(typeResultArray.key5).toEqual(updateData.key5);
 
     // Begins With condition should pass
     updateData.key5 = [{ key1: 'beginsWith' }];
@@ -1176,5 +1237,143 @@ describe('repositories/Dynamo/index', () => {
     );
 
     expect(results).toMatchSnapshot();
+  });
+
+  it('should update nested object array element status', async () => {
+    const db = new Dynamo('primary');
+
+    // Create an item with a nested object containing an array
+    const created = await db.create({
+      pk: 'nestedObjectArrayPK',
+      sk: 'nestedObjectArraySK',
+      gsi1: 'nestedObjectArrayGSI1',
+      key4: {
+        key5: [
+          { id: 'input1', status: 'active' },
+          { id: 'input2', status: 'inactive' },
+          { id: 'input3', status: 'active' },
+          { id: 'input4', status: 'inactive' },
+        ],
+      },
+    });
+
+    expect(created).toMatchSnapshot();
+
+    // Update the status of key4.key5[3]
+    const updateData = {
+      pk: 'nestedObjectArrayPK',
+      sk: 'nestedObjectArraySK',
+      'key4.key5[3].status': 'active',
+    };
+
+    const result = await db.update(updateData, { skipJoiCheck: true });
+
+    expect(result.key4.key5[3].status).toEqual('active');
+    expect(result.key4.key5[0]).toEqual({
+      id: 'input1',
+      status: 'active',
+    });
+    expect(result.key4.key5).toHaveLength(4);
+  });
+
+  it('should update with complex nested conditionals', async () => {
+    const db = new Dynamo('primary');
+
+    // Create an item with a nested object containing an array
+    const created = await db.create({
+      pk: 'complexConditionalPK',
+      sk: 'complexConditionalSK',
+      gsi1: 'complexConditionalGSI1',
+      key4: {
+        key5: [
+          { id: 'input1', status: 'active' },
+          { id: 'input2', status: 'inactive' },
+          { id: 'input3', status: 'active' },
+          { id: 'input4', status: 'inactive' },
+        ],
+        key6: '123',
+      },
+    });
+
+    expect(created).toMatchSnapshot();
+
+    // Update key4.key5[3].status with complex conditionals
+    const updateData = {
+      pk: 'complexConditionalPK',
+      sk: 'complexConditionalSK',
+      'key4.key5[3].status': 'active',
+    };
+
+    const conditionals: any = [
+      {
+        key: 'key4.key5[3].status',
+        operation: 'attribute_exists',
+      },
+      // For some reason, we can't expect a value that we are updated
+      // when working with nested keys. Would be good to figure this
+      // out some day
+      // {
+      //   key: 'key4.key5[3].status',
+      //   operation: '=',
+      //   value: 'inactive',
+      // },
+      {
+        key: 'key4.key5[3].id',
+        operation: '=',
+        value: 'input4',
+      },
+      {
+        key: 'key4.key5[0].id',
+        operation: 'contains',
+        value: '1',
+      },
+    ];
+
+    const result = await db.update(updateData, {
+      skipJoiCheck: true,
+      conditionals,
+    });
+
+    expect(result.key4.key5[3].status).toEqual('active');
+    expect(result.key4.key5[0]).toEqual({
+      id: 'input1',
+      status: 'active',
+    });
+    expect(result.key4.key5).toHaveLength(4);
+
+    // Test that update fails when conditions are not met
+    // Create an item without key4.key5[3].status
+    await db.create({
+      pk: 'failConditionalPK',
+      sk: 'failConditionalSK',
+      gsi1: 'failConditionalGSI1',
+      key4: {
+        key5: [
+          { id: 'input1', status: 'active' },
+          { id: 'input2', status: 'inactive' },
+          { id: 'input3', status: 'active' },
+          { id: 'input4' }, // No status field
+        ],
+      },
+    });
+
+    await expect(
+      db.update(
+        {
+          pk: 'failConditionalPK',
+          sk: 'failConditionalSK',
+          'key4.key5[3].status': 'active',
+        },
+        {
+          skipJoiCheck: true,
+          conditionals: [
+            {
+              key: 'key4.key5[3].status',
+              operation: 'attribute_exists',
+            },
+          ],
+        },
+      ),
+    ).rejects.toThrow('The conditional request failed');
   });
 });

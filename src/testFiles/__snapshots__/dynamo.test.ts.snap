@@ -2564,6 +2564,34 @@ exports[`repositories/Dynamo/index should crud with pk and sk number values 2`] 
 }
 `;
 
+exports[`repositories/Dynamo/index should update nested object array element status 1`] = `
+{
+  "gsi1": "nestedObjectArrayGSI1",
+  "key4": {
+    "key5": [
+      {
+        "id": "input1",
+        "status": "active",
+      },
+      {
+        "id": "input2",
+        "status": "inactive",
+      },
+      {
+        "id": "input3",
+        "status": "active",
+      },
+      {
+        "id": "input4",
+        "status": "inactive",
+      },
+    ],
+  },
+  "pk": "nestedObjectArrayPK",
+  "sk": "nestedObjectArraySK",
+}
+`;
+
 exports[`repositories/Dynamo/index should update part of an object 1`] = `
 {
   "gsi1": "gsi1",
@@ -2581,9 +2609,39 @@ exports[`repositories/Dynamo/index should update part of an object 1`] = `
 }
 `;
 
+exports[`repositories/Dynamo/index should update with complex nested conditionals 1`] = `
+{
+  "gsi1": "complexConditionalGSI1",
+  "key4": {
+    "key5": [
+      {
+        "id": "input1",
+        "status": "active",
+      },
+      {
+        "id": "input2",
+        "status": "inactive",
+      },
+      {
+        "id": "input3",
+        "status": "active",
+      },
+      {
+        "id": "input4",
+        "status": "inactive",
+      },
+    ],
+    "key6": "123",
+  },
+  "pk": "complexConditionalPK",
+  "sk": "complexConditionalSK",
+}
+`;
+
 exports[`repositories/Dynamo/index should update with conditionals 1`] = `
 {
   "gsi1": "conditionalGSI1",
+  "key3": true,
   "key4": {
     "key1": "exists",
     "key1-test": "exists2",
