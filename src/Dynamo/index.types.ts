@@ -131,7 +131,7 @@ interface Conditional {
     | '<'
     | '>='
     | '>';
-  value?: Pk | 'string' | 'number' | 'boolean' | 'array' | 'object';
+  value?: Pk | string | number | boolean | 'array' | 'object';
   value2?: Pk; // For between
 }
 
@@ -139,4 +139,5 @@ export interface UpdateOptions {
   shouldExist?: boolean;
   conditionals?: Conditional[];
   skipJoiCheck?: boolean;
+  conditionalsCombiner?: 'AND' | 'OR';
 }

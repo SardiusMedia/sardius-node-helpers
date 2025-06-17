@@ -981,12 +981,13 @@ class DynamoWrapper {
 
       // Conditional Option
       const conditionalUpdates = options.conditionals || [];
+      const conditionalsCombiner = options.conditionalsCombiner || 'AND';
 
       if (conditionalUpdates.length > 0) {
         hasConditionals = true;
 
         if (ConditionExpression && ConditionExpression.length > 0) {
-          ConditionExpression += ' AND ';
+          ConditionExpression += ` ${conditionalsCombiner} `;
         } else {
           ConditionExpression = '';
         }
@@ -1066,7 +1067,7 @@ class DynamoWrapper {
 
             return `#${formattedKey} ${operation} :${valueKey}`;
           })
-          .join(' AND ');
+          .join(` ${conditionalsCombiner} `);
       }
 
       const updateConfig: UpdateItemCommandInput = {

@@ -1397,4 +1397,125 @@ describe('repositories/Dynamo/index', () => {
       ),
     ).rejects.toThrow('The conditional request failed');
   });
+
+  it('should handle OR conditionals', async () => {
+    const db = new Dynamo('primary');
+
+    const pk = 'orConditionPK';
+    const sk = 'orConditionSK';
+    const gsi1 = 'orConditionGSI1';
+
+    // Test that update fails when OR conditions are not met
+    // Create an item without key4.key5[3].status
+    await db.create({ pk, sk, gsi1, key3: true });
+
+    // Should fail if key3 is true
+    await expect(
+      db.update(
+        { pk, sk, key3: false },
+        {
+          skipJoiCheck: true,
+          conditionalsCombiner: 'OR',
+          conditionals: [
+            {
+              key: 'key3',
+              operation: 'attribute_not_exists',
+            },
+            {
+              key: 'key3',
+              operation: '=',
+              value: false,
+            },
+          ],
+        },
+      ),
+    ).rejects.toThrow('The conditional request failed');
+
+    // Should fail when only checking if key3 is false
+    await expect(
+      db.update(
+        { pk, sk, key3: false },
+        {
+          skipJoiCheck: true,
+          conditionalsCombiner: 'OR',
+          conditionals: [
+            {
+              key: 'key3',
+              operation: '=',
+              value: false,
+            },
+          ],
+        },
+      ),
+    ).rejects.toThrow('The conditional request failed');
+
+    // Should fail since it exists
+    await expect(
+      db.update(
+        { pk, sk, key3: false },
+        {
+          skipJoiCheck: true,
+          conditionalsCombiner: 'OR',
+          conditionals: [
+            {
+              key: 'key3',
+              operation: 'attribute_not_exists',
+            },
+          ],
+        },
+      ),
+    ).rejects.toThrow('The conditional request failed');
+
+    await db.update({
+      pk,
+      sk,
+      key2: 'test',
+      key3: false,
+    });
+
+    // Should not fail since key3 is now false
+    expect(
+      await db.update(
+        { pk, sk, key2: 'test 2' },
+        {
+          skipJoiCheck: true,
+          conditionalsCombiner: 'OR',
+          conditionals: [
+            {
+              key: 'key3',
+              operation: 'attribute_not_exists',
+            },
+            {
+              key: 'key3',
+              operation: '=',
+              value: false,
+            },
+          ],
+        },
+      ),
+    ).toEqual({
+      gsi1: 'orConditionGSI1',
+      key3: false,
+      key2: 'test 2',
+      pk: 'orConditionPK',
+      sk: 'orConditionSK',
+    });
+
+    // Should fail since it exists, even though it's false
+    await expect(
+      db.update(
+        { pk, sk, key2: 'test 3' },
+        {
+          skipJoiCheck: true,
+          conditionalsCombiner: 'OR',
+          conditionals: [
+            {
+              key: 'key3',
+              operation: 'attribute_not_exists',
+            },
+          ],
+        },
+      ),
+    ).rejects.toThrow('The conditional request failed');
+  });
 });
