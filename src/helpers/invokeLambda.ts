@@ -13,6 +13,7 @@ type serviceType =
   | 'assets-stats'
   | 'bios'
   | 'Calendar'
+  | 'calendars'
   | 'categories'
   | 'chat'
   | 'emails'
