@@ -725,7 +725,11 @@ class DynamoWrapper {
     return keys;
   }
 
-  private formatData(data: any, method: 'create' | 'update'): any {
+  private formatData(
+    data: any,
+    method: 'create' | 'update',
+    options?: { preventUpdatedAtChange?: boolean },
+  ): any {
     const formattedData = { ...data, incrementValues: [] };
 
     // marshall doesn't like undefined or empty strings
@@ -763,7 +767,10 @@ class DynamoWrapper {
           formattedData.updatedAt = currentDate;
         }
       } else if (method === 'update') {
-        formattedData.updatedAt = currentDate;
+        // Only set updatedAt if preventUpdatedAtChange is not true
+        if (!options?.preventUpdatedAtChange) {
+          formattedData.updatedAt = currentDate;
+        }
       }
     }
 
@@ -898,7 +905,9 @@ class DynamoWrapper {
       const options = typeof rawOptions === 'object' ? rawOptions : {};
       const shouldExist = rawOptions === true || options.shouldExist;
 
-      const formattedData = this.formatData(data, 'update');
+      const formattedData = this.formatData(data, 'update', {
+        preventUpdatedAtChange: options.preventUpdatedAtChange,
+      });
 
       if (!options.skipJoiCheck) {
         this.checkSchema(formattedData, 'update');

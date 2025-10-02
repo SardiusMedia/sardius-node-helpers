@@ -140,4 +140,5 @@ export interface UpdateOptions {
   conditionals?: Conditional[];
   skipJoiCheck?: boolean;
   conditionalsCombiner?: 'AND' | 'OR';
+  preventUpdatedAtChange?: boolean;
 }

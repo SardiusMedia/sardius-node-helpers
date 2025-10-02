@@ -336,6 +336,64 @@ describe('repositories/Dynamo/index', () => {
     expect(updateResult.updatedAt.length).not.toEqual(0);
   });
 
+  it('update with preventUpdatedAtChange option should not update updatedAt timestamp', async () => {
+    const db = new Dynamo('primary', { timestamps: true });
+
+    const data = {
+      pk: 'pk_testPreventUpdatedAt',
+      sk: 'sk_testPreventUpdatedAt',
+      key1: 'testPreventUpdatedAt',
+      gsi1: 'gsi_testPreventUpdatedAt',
+    };
+
+    const createResult = await db.create(data);
+
+    expect(createResult.pk).toEqual(data.pk);
+    expect(createResult.sk).toEqual(data.sk);
+    expect(createResult.key1).toEqual('testPreventUpdatedAt');
+    expect(createResult.gsi1).toEqual(data.gsi1);
+    expect(typeof createResult.createdAt).toEqual('string');
+    expect(createResult.createdAt.length).not.toEqual(0);
+    expect(typeof createResult.updatedAt).toEqual('undefined');
+
+    // Wait a small amount to ensure timestamp difference
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Update with preventUpdatedAtChange: true
+    const updateResult = await db.update(
+      { ...data, key1: 'testPreventUpdatedAt2' },
+      { preventUpdatedAtChange: true },
+    );
+
+    expect(updateResult.pk).toEqual(data.pk);
+    expect(updateResult.sk).toEqual(data.sk);
+    expect(updateResult.key1).toEqual('testPreventUpdatedAt2');
+    expect(updateResult.gsi1).toEqual(data.gsi1);
+    expect(typeof updateResult.createdAt).toEqual('string');
+    expect(updateResult.createdAt.length).not.toEqual(0);
+    // updatedAt should not be set when preventUpdatedAtChange is true
+    expect(typeof updateResult.updatedAt).toEqual('undefined');
+
+    // Wait a small amount to ensure timestamp difference
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Update without preventUpdatedAtChange (default behavior)
+    const updateResult2 = await db.update({
+      ...data,
+      key1: 'testPreventUpdatedAt3',
+    });
+
+    expect(updateResult2.pk).toEqual(data.pk);
+    expect(updateResult2.sk).toEqual(data.sk);
+    expect(updateResult2.key1).toEqual('testPreventUpdatedAt3');
+    expect(updateResult2.gsi1).toEqual(data.gsi1);
+    expect(typeof updateResult2.createdAt).toEqual('string');
+    expect(updateResult2.createdAt.length).not.toEqual(0);
+    // updatedAt should be set when preventUpdatedAtChange is false/undefined
+    expect(typeof updateResult2.updatedAt).toEqual('string');
+    expect(updateResult2.updatedAt.length).not.toEqual(0);
+  });
+
   it('update fails as expected', async () => {
     const db = new Dynamo('primary');
 
