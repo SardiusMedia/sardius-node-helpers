@@ -63,13 +63,14 @@ async function notion(
       parent: {
         database_id: databaseId,
       },
+      // Make sure we have defaults for all properties so the log doesn't fail to send when missing properties
       properties: {
         // Title property (required for most databases)
         'Asset ID': {
           title: [
             {
               text: {
-                content: data.assetId,
+                content: data.assetId || 'unknown',
               },
             },
           ],
@@ -78,7 +79,7 @@ async function notion(
           rich_text: [
             {
               text: {
-                content: data.accountId,
+                content: data.accountId || 'unknown',
               },
             },
           ],
@@ -87,21 +88,21 @@ async function notion(
           rich_text: [
             {
               text: {
-                content: data.errorMessage,
+                content: data.errorMessage || 'unknown',
               },
             },
           ],
         },
         ...(data.assetLink && {
           'Asset Link': {
-            url: data.assetLink,
+            url: data.assetLink || 'none',
           },
         }),
         Profile: {
           rich_text: [
             {
               text: {
-                content: data.profile || '',
+                content: data.profile || 'unknown',
               },
             },
           ],
@@ -110,7 +111,7 @@ async function notion(
           rich_text: [
             {
               text: {
-                content: data.accountName,
+                content: data.accountName || 'unknown',
               },
             },
           ],
@@ -119,7 +120,7 @@ async function notion(
           rich_text: [
             {
               text: {
-                content: data.stage,
+                content: data.stage || 'unknown',
               },
             },
           ],
@@ -137,14 +138,14 @@ async function notion(
           rich_text: [
             {
               text: {
-                content: data.time,
+                content: data.time || Date.now().toString(),
               },
             },
           ],
         },
         ...(data.logLink && {
           'Log Link': {
-            url: data.logLink,
+            url: data.logLink || 'none',
           },
         }),
         Provider: {
