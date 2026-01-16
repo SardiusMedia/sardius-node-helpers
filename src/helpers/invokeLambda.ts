@@ -31,6 +31,7 @@ type serviceType =
   | 'roles'
   | 'scp'
   | 'search'
+  | 'search-os'
   | 'sites'
   | 'static'
   | 'stream'
