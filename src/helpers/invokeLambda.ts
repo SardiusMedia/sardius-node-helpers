@@ -74,6 +74,18 @@ export default async (
 
   const data = await lambda.invoke(invokeParams);
 
+  // Check for Lambda execution errors (unhandled exceptions)
+  // When FunctionError is set, the Lambda threw an error
+  if (data.FunctionError) {
+    const payloadStr = data.Payload
+      ? Buffer.from(data.Payload).toString()
+      : '{}';
+    const errorPayload = JSON.parse(payloadStr);
+    const errorMessage =
+      errorPayload.errorMessage || errorPayload.message || 'Unknown error';
+    throw Error(`Invoke Lambda failed: ${errorMessage}`);
+  }
+
   const payloadResponse = data.Payload
     ? Buffer.from(data.Payload).toString()
     : '{}';
@@ -94,8 +106,16 @@ export default async (
     parsedData.statusCode !== 200 &&
     parsedData.statusCode !== 202
   ) {
-    const message =
-      body && body.message ? body.message : 'Invoke Lambda failed';
+    // Try to extract error message from various possible locations
+    const errorDetail =
+      body?.message ||
+      body?.error ||
+      parsedData.errorMessage ||
+      (typeof body === 'string' ? body : JSON.stringify(body));
+
+    const message = errorDetail
+      ? `Invoke Lambda failed: ${errorDetail}`
+      : `Invoke Lambda failed with status ${parsedData.statusCode}`;
 
     throw Error(message);
   }
