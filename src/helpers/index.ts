@@ -4,7 +4,9 @@ import getAccount from './getAccount';
 import getAWSSecrets from './getAWSSecrets';
 import getBuckets from './buckets/getBuckets';
 import getStage from './getStage';
+import getTusHostForStage from './getTusHostForStage';
 import invokeLambda from './invokeLambda';
+import isTusSourceUrl from './isTusSourceUrl';
 import isObject from './isObject';
 import sendSlack from './sendSlack';
 import stepFunctionHelpers from './stepFunctionHelpers';
@@ -18,7 +20,9 @@ export {
   getAWSSecrets,
   getBuckets,
   getStage,
+  getTusHostForStage,
   invokeLambda,
+  isTusSourceUrl,
   isObject,
   sendSlack,
   stepFunctionHelpers,
