@@ -9,3 +9,8 @@
 .DS_Store?
 yarn-error.log
 coverage
+
+# Build output — only package.json is tracked (npm publish)
+/build/**
+!/build/
+!/build/package.json
