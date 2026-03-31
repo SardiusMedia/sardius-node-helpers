@@ -1,14 +1,12 @@
-import getStage from './getStage';
-import getTusHostForStage from './getTusHostForStage';
-
 /**
- * Returns true if the given URL's host is the TUS (Cloudflare Files) host for the current stage.
+ * Returns true for temporary upload source URLs used during import (TUS-style flow),
+ * hosted on the Sardius uploads CDN (`uploads-*.sardius.media`, including alpha).
  */
+const UPLOADS_SOURCE_HOST_RE = /^uploads-.+\.sardius\.media$/i;
+
 export default function isTusSourceUrl(url: string): boolean {
   try {
-    const stage = getStage();
-    const tusHost = getTusHostForStage(stage);
-    return new URL(url).host === tusHost;
+    return UPLOADS_SOURCE_HOST_RE.test(new URL(url).hostname);
   } catch {
     return false;
   }
