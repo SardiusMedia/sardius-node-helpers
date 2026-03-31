@@ -13,3 +13,4 @@
 - If a user requests a version bump for this repo, update both `package.json` and `build/package.json`.
 - Do not leave these version values mismatched.
 - After version changes, report both resulting versions explicitly.
+- You do not need to run the build command and update the build folder, this is done by github action
