@@ -1,4 +1,5 @@
-import invokeLambda, { lambda } from './invokeLambda';
+import invokeLambda from './invokeLambda';
+import { Lambda } from '@aws-sdk/client-lambda';
 
 // Mock the Lambda client
 jest.mock('@aws-sdk/client-lambda', () => ({
@@ -8,12 +9,17 @@ jest.mock('@aws-sdk/client-lambda', () => ({
 }));
 
 describe('invokeLambda', () => {
-  const mockInvoke = lambda.invoke as jest.Mock;
+  const mockLambdaConstructor = Lambda as unknown as jest.Mock;
+  let mockInvoke: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.cfstack = 'test-stack';
     process.env.stage = 'test';
+    mockInvoke = jest.fn();
+    mockLambdaConstructor.mockImplementation(() => ({
+      invoke: mockInvoke,
+    }));
   });
 
   describe('successful invocations', () => {
@@ -259,6 +265,53 @@ describe('invokeLambda', () => {
           InvocationType: 'Event',
         }),
       );
+    });
+  });
+
+  describe('retry options and signature error handling', () => {
+    it('should use caller-provided maxAttempts when retry options are passed', async () => {
+      const customClientInvoke = jest.fn().mockResolvedValue({
+        Payload: Buffer.from(JSON.stringify({ statusCode: 200, body: '{}' })),
+      });
+      mockLambdaConstructor.mockImplementationOnce(() => ({
+        invoke: customClientInvoke,
+      }));
+
+      await invokeLambda('assets', 'test', { pathParameters: {} }, undefined, {
+        maxAttempts: 5,
+      });
+
+      expect(customClientInvoke).toHaveBeenCalledTimes(1);
+      expect(mockLambdaConstructor).toHaveBeenLastCalledWith(
+        expect.objectContaining({ maxAttempts: 5 }),
+      );
+    });
+
+    it('should recreate client and retry once on signature expiry errors', async () => {
+      const firstInvoke = jest.fn().mockRejectedValue(
+        Object.assign(new Error('Signature expired'), {
+          name: 'InvalidSignatureException',
+        }),
+      );
+      const retryInvoke = jest.fn().mockResolvedValue({
+        Payload: Buffer.from(
+          JSON.stringify({
+            statusCode: 200,
+            body: JSON.stringify({ ok: true }),
+          }),
+        ),
+      });
+      mockLambdaConstructor
+        .mockImplementationOnce(() => ({ invoke: firstInvoke }))
+        .mockImplementationOnce(() => ({ invoke: retryInvoke }));
+
+      const result = await invokeLambda('assets', 'test', {
+        pathParameters: {},
+      });
+
+      expect(result).toEqual({ ok: true });
+      expect(firstInvoke).toHaveBeenCalledTimes(1);
+      expect(retryInvoke).toHaveBeenCalledTimes(1);
     });
   });
 });
