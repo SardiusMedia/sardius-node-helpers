@@ -1,10 +1,7 @@
 import { Lambda } from '@aws-sdk/client-lambda';
+import type { LambdaClientConfig } from '@aws-sdk/client-lambda';
 
 import keyValuePair from '../common/tsModels/keyValueAny';
-
-export const lambda = new Lambda({
-  region: process.env.region,
-});
 
 type serviceType =
   | 'accounts'
@@ -49,11 +46,25 @@ interface eventObject {
   body?: keyValuePair;
 }
 
+function isClockSignatureError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const err = error as { name?: string; message?: string };
+  const name = String(err.name || '');
+  const message = String(err.message || '').toLowerCase();
+  return (
+    name === 'InvalidSignatureException' ||
+    message.includes('signature expired') ||
+    message.includes('invalidsignatureexception') ||
+    message.includes('requesttimetooskewed')
+  );
+}
+
 export default async (
   service: serviceType,
   functionName: string,
   eventObj: eventObject,
   invocationType?: 'RequestResponse' | 'Event',
+  options?: LambdaClientConfig,
 ): Promise<keyValuePair> => {
   const type = invocationType || 'RequestResponse';
 
@@ -72,7 +83,24 @@ export default async (
     Payload: Buffer.from(JSON.stringify(event), 'utf8'),
   };
 
-  const data = await lambda.invoke(invokeParams);
+  const createLambdaClient = () =>
+    new Lambda({
+      region: process.env.region,
+      ...options,
+    });
+  const lambda = createLambdaClient();
+
+  let data;
+  try {
+    data = await lambda.invoke(invokeParams);
+  } catch (error) {
+    if (!isClockSignatureError(error)) {
+      throw error;
+    }
+    // One immediate retry with a fresh client helps when a stale signer/clock
+    // offset exists in a warm Lambda execution environment.
+    data = await createLambdaClient().invoke(invokeParams);
+  }
 
   // Check for Lambda execution errors (unhandled exceptions)
   // When FunctionError is set, the Lambda threw an error
