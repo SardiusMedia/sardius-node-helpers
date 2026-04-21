@@ -166,7 +166,7 @@ describe('src/helpers/buckets/validateBucket', () => {
       key: 'key',
       secret: 'abc',
       bucketName: 'testBucket',
-      provider: 'lyvecloud',
+      provider: 'storj',
     };
     try {
       validateBucket(bucket);

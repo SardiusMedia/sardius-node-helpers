@@ -8,7 +8,7 @@ export default interface Bucket {
   region?: string;
   secret: string;
   type: 'backblaze' | 's3';
-  provider: 'backblaze' | 'lyvecloud' | 'storj';
+  provider: 'backblaze' | 'storj';
   readOnly?: boolean;
   disabled?: boolean;
 }

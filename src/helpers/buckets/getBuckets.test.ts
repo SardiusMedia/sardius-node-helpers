@@ -15,7 +15,7 @@ const mockAccountS3Bucket = {
   key: 'b_key',
   secret: 'b_secret',
   bucketName: 'testBucket',
-  provider: 'lyvecloud',
+  provider: 'storj',
   region: 'us-west',
   endpointUrl: 'https://...',
 };
@@ -26,7 +26,7 @@ const mockAccountS3BucketReadOnly = {
   key: 'c_key',
   secret: 'c_secret',
   bucketName: 'testBucketReadOnly',
-  provider: 'lyvecloud',
+  provider: 'storj',
   region: 'us-west',
   endpointUrl: 'https://...',
   readOnly: true,
@@ -102,25 +102,6 @@ process.env['sj_assets_secret'] = mockSJEnvBucket.secret;
 process.env['sj_assets_endpoint'] = mockSJEnvBucket.endpointUrl;
 process.env['sj_assets_region'] = mockSJEnvBucket.region;
 
-const mockLCEnvBucket = {
-  type: 's3',
-  endpointUrl: 'https://test.com',
-  provider: 'lyvecloud',
-  region: 'us-west-1',
-  id: 'lyvecloudId',
-  key: 'lyvecloudAppKey',
-  secret: 'lyvecloudAppSecret',
-  internalBucket: true,
-  bucketName: 'lyvecloudBucketName',
-};
-
-process.env['lc_assets_key'] = mockLCEnvBucket.key;
-process.env['lc_assets_bucketId'] = mockLCEnvBucket.id;
-process.env['lc_assets_bucketName'] = mockLCEnvBucket.bucketName;
-process.env['lc_assets_secret'] = mockLCEnvBucket.secret;
-process.env['lc_assets_endpoint'] = mockLCEnvBucket.endpointUrl;
-process.env['lc_assets_region'] = mockLCEnvBucket.region;
-
 afterEach(() => {
   process.env[`externalProviders_${mockAccount.id}`] = '';
   process.env[`accountBucketDefaults_${mockAccount.id}`] = '';
@@ -150,14 +131,12 @@ describe('src/helpers/buckets/getBuckets', () => {
 
   it('should work with bucket IDs', async () => {
     const results = await getBuckets(mockAccount.id, [
-      mockLCEnvBucket.id,
       mockSJEnvBucket.id,
       mockBBEUEnvBucket.id,
       mockBBEnvBucket.id,
     ]);
 
     expect(results).toEqual([
-      mockLCEnvBucket,
       mockSJEnvBucket,
       mockBBEUEnvBucket,
       mockBBEnvBucket,
@@ -192,18 +171,13 @@ describe('src/helpers/buckets/getBuckets', () => {
     }
   });
 
-  it('should fail if only disabled buckets are chosen', async () => {
-    process.env['lc_assets_disabled'] = 'true';
-
+  it('should fail for legacy lc_assets bucket id', async () => {
     try {
       await getBuckets(mockAccount.id, ['lc_assets']);
-
       expect('should not').toEqual('get here');
     } catch (err) {
       expect(err.message).toEqual('No valid buckets found');
     }
-
-    process.env['lc_assets_disabled'] = undefined;
   });
 
   it('should not call account if environment variable was found', async () => {
@@ -223,35 +197,27 @@ describe('src/helpers/buckets/getBuckets', () => {
       mockSJEnvBucket,
       mockBBEnvBucket,
       mockBBEUEnvBucket,
-      mockLCEnvBucket,
     ]);
   });
 
   it('should work with a disabled bucket', async () => {
-    process.env['lc_assets_disabled'] = 'true';
     process.env['bb_assets-eu_disabled'] = 'true';
 
     const results = await getBuckets(mockAccount.id, ['default']);
 
-    process.env['lc_assets_disabled'] = undefined;
     process.env['bb_assets-eu_disabled'] = undefined;
 
     expect(results).toEqual([mockSJEnvBucket, mockBBEnvBucket]);
   });
 
-  it('should not be able to disable Storj', async () => {
+  it('should omit Storj when sj_assets is disabled', async () => {
     process.env['sj_assets_disabled'] = 'true';
 
     const results = await getBuckets(mockAccount.id, ['default']);
 
     process.env['sj_assets_disabled'] = undefined;
 
-    expect(results).toEqual([
-      mockSJEnvBucket,
-      mockBBEnvBucket,
-      mockBBEUEnvBucket,
-      mockLCEnvBucket,
-    ]);
+    expect(results).toEqual([mockBBEnvBucket, mockBBEUEnvBucket]);
   });
 
   it('should work with "default" setting and custom account buckets', async () => {
@@ -283,7 +249,6 @@ describe('src/helpers/buckets/getBuckets', () => {
     const results = await getBuckets(mockAccount.id, ['default']);
 
     expect(results).toEqual([
-      mockLCEnvBucket,
       mockSJEnvBucket,
       mockAccountBBBucket,
       mockAccountS3Bucket,
@@ -301,7 +266,6 @@ describe('src/helpers/buckets/getBuckets', () => {
       mockSJEnvBucket,
       mockBBEnvBucket,
       mockBBEUEnvBucket,
-      mockLCEnvBucket,
     ]);
   });
 
@@ -329,7 +293,6 @@ describe('src/helpers/buckets/getBuckets', () => {
       mockSJEnvBucket,
       mockBBEnvBucket,
       mockBBEUEnvBucket,
-      mockLCEnvBucket,
       mockAccountBBBucket,
       mockAccountS3Bucket,
     ]);
@@ -362,7 +325,6 @@ describe('src/helpers/buckets/getBuckets', () => {
       mockSJEnvBucket,
       mockBBEnvBucket,
       mockBBEUEnvBucket,
-      mockLCEnvBucket,
       mockAccountS3Bucket,
     ]);
   });
@@ -397,7 +359,6 @@ describe('src/helpers/buckets/getBuckets', () => {
       mockSJEnvBucket,
       mockBBEnvBucket,
       mockBBEUEnvBucket,
-      mockLCEnvBucket,
       mockAccountBBBucket,
       mockAccountS3Bucket,
       mockAccountS3BucketReadOnly,
