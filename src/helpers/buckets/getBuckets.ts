@@ -6,7 +6,6 @@ import validateBucket from './validateBucket';
 const acceptedInternalIds = [
   'bb_assets',
   'bb_assets-eu',
-  'lc_assets',
   'sj_assets',
   'default',
 ];
@@ -75,25 +74,24 @@ export default async (
 
   if (buckets.indexOf('default') > -1) {
     if (accountBucketDefaults.length > 0) {
-      formattedBuckets = accountBucketDefaults.map(item => item.id);
+      formattedBuckets = accountBucketDefaults
+        .map(item => item.id)
+        .filter(id => id !== 'lc_assets');
     } else {
       // System defaults
-      formattedBuckets = [
-        'sj_assets',
-        'bb_assets',
-        'bb_assets-eu',
-        'lc_assets',
-      ];
+      formattedBuckets = ['sj_assets', 'bb_assets', 'bb_assets-eu'];
     }
   }
 
   if (buckets.indexOf('all') > -1) {
-    formattedBuckets = ['sj_assets', 'bb_assets', 'bb_assets-eu', 'lc_assets'];
+    formattedBuckets = ['sj_assets', 'bb_assets', 'bb_assets-eu'];
 
     externalProviders.forEach(bucket => {
       formattedBuckets.push(bucket.id);
     });
   }
+
+  formattedBuckets = formattedBuckets.filter(id => id !== 'lc_assets');
 
   formattedBuckets.forEach(incomingBucketId => {
     let foundBucket: Bucket | undefined = undefined;
@@ -130,15 +128,8 @@ export default async (
             internalBucket: true,
           };
         }
-      } else {
-        const provider = bucketId === 'lc_assets' ? 'lyvecloud' : 'storj';
-
-        if (
-          process.env[`${bucketId}_disabled`] === 'true' &&
-          provider !== 'storj'
-        ) {
-          // Do nothing if our bucket is disabled, but we always return storj
-        } else {
+      } else if (bucketId === 'sj_assets') {
+        if (process.env[`${bucketId}_disabled`] !== 'true') {
           foundBucket = {
             type: 's3',
             id: process.env[`${bucketId}_bucketId`] || '',
@@ -146,7 +137,7 @@ export default async (
             secret: process.env[`${bucketId}_secret`] || '',
             bucketName: process.env[`${bucketId}_bucketName`] || '',
             region: process.env[`${bucketId}_region`] || '',
-            provider,
+            provider: 'storj',
             endpointUrl: process.env[`${bucketId}_endpoint`] || '',
             internalBucket: true,
           };
