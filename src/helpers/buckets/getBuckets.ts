@@ -1,6 +1,6 @@
 import { Bucket } from '../../common/tsModels';
 
-import { getAWSSecrets, getAccount } from '../index';
+import { getAWSSecrets, getAccountPrivate } from '../index';
 import validateBucket from './validateBucket';
 
 const acceptedInternalIds = [
@@ -42,8 +42,11 @@ export default async (
     externalProviders = JSON.parse(foundExternalProviders);
     accountBucketDefaults = JSON.parse(foundAccountBucketDefaults);
   } else if (accountId !== 'sardiusAdmin') {
-    const account = (await getAccount(accountId)) as Awaited<
-      ReturnType<typeof getAccount>
+    // Use the private account endpoint so storage maintenance (sync, desync,
+    // cleanup after asset delete) still works when an account has been
+    // deactivated. getBuckets only needs storage config, not active gating.
+    const account = (await getAccountPrivate(accountId)) as Awaited<
+      ReturnType<typeof getAccountPrivate>
     > & {
       storage?: { externalProviders?: Bucket[]; buckets?: AccountBuckets[] };
     };

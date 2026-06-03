@@ -46,7 +46,9 @@ const mockAccount: any = {
 const mockGetAccount = jest.fn(accountId => mockAccount);
 jest.mock('../index', () => ({
   __esModule: true,
-  getAccount: jest.fn().mockImplementation(param1 => mockGetAccount(param1)),
+  getAccountPrivate: jest
+    .fn()
+    .mockImplementation(param1 => mockGetAccount(param1)),
   getAWSSecrets: jest.fn(),
 }));
 
