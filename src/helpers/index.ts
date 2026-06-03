@@ -2,6 +2,7 @@ import axiosRetry500s from './axiosRetry500s';
 import axiosPool from './axiosPool';
 import coda from './coda';
 import getAccount from './getAccount';
+import getAccountPrivate from './getAccountPrivate';
 import getAWSSecrets from './getAWSSecrets';
 import getBuckets from './buckets/getBuckets';
 import getStage from './getStage';
@@ -18,6 +19,7 @@ export {
   axiosRetry500s,
   coda,
   getAccount,
+  getAccountPrivate,
   getAWSSecrets,
   getBuckets,
   getStage,
