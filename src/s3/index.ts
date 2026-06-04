@@ -26,8 +26,13 @@ import {
 } from '@aws-sdk/client-s3';
 
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { NodeHttpHandler } from '@smithy/node-http-handler';
 
 import isObject from '../helpers/isObject';
+
+import createPooledRequestHandler, {
+  PoolOptions,
+} from './createPooledRequestHandler';
 
 interface Params {
   accessKeyId?: string;
@@ -35,6 +40,24 @@ interface Params {
   bucket?: string;
   endpoint?: string;
   region?: string;
+  /**
+   * Opt in to keep-alive connection pooling and DNS caching for this client.
+   * Defaults to `false` so existing consumers see no behavior change.
+   */
+  pool?: boolean;
+  /**
+   * Tunables for the shared connection pool. Only takes effect when
+   * `pool: true` (or when `pool` is omitted and `requestHandler` is not
+   * provided). Multiple S3Wrapper instances constructed with the same
+   * options share a single underlying socket pool.
+   */
+  poolOptions?: PoolOptions;
+  /**
+   * Escape hatch — provide a fully constructed `NodeHttpHandler` (e.g. one
+   * wrapped with X-Ray instrumentation) and it will be used directly,
+   * bypassing the built-in pool.
+   */
+  requestHandler?: NodeHttpHandler;
 }
 
 export default class {
@@ -47,6 +70,9 @@ export default class {
     bucket,
     endpoint,
     region,
+    pool,
+    poolOptions,
+    requestHandler,
   }: Params) {
     if (!accessKeyId && !bucket) {
       throw Error('accessKeyId is required to use the s3 class');
@@ -75,6 +101,16 @@ export default class {
         accessKeyId,
         secretAccessKey,
       };
+    }
+
+    // Only attach a request handler when explicitly opted in. Existing
+    // consumers that don't pass `pool`, `poolOptions`, or `requestHandler`
+    // continue to get the AWS SDK default handler — i.e. zero behavior
+    // change from prior versions.
+    if (requestHandler) {
+      config.requestHandler = requestHandler;
+    } else if (pool || poolOptions) {
+      config.requestHandler = createPooledRequestHandler(poolOptions);
     }
 
     const s3 = new S3Client(config);
