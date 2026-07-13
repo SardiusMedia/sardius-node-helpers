@@ -1,24 +1,29 @@
-import invokeLambda from './invokeLambda';
+import invokeLambda, { resetSharedLambdaClientForTests } from './invokeLambda';
 import { Lambda } from '@aws-sdk/client-lambda';
 
 // Mock the Lambda client
 jest.mock('@aws-sdk/client-lambda', () => ({
   Lambda: jest.fn().mockImplementation(() => ({
     invoke: jest.fn(),
+    destroy: jest.fn(),
   })),
 }));
 
 describe('invokeLambda', () => {
   const mockLambdaConstructor = Lambda as unknown as jest.Mock;
   let mockInvoke: jest.Mock;
+  let mockDestroy: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    resetSharedLambdaClientForTests();
     process.env.cfstack = 'test-stack';
     process.env.stage = 'test';
     mockInvoke = jest.fn();
+    mockDestroy = jest.fn();
     mockLambdaConstructor.mockImplementation(() => ({
       invoke: mockInvoke,
+      destroy: mockDestroy,
     }));
   });
 
@@ -74,6 +79,19 @@ describe('invokeLambda', () => {
       });
 
       expect(result).toEqual('plain text response');
+    });
+
+    it('should reuse one shared Lambda client across default invokes', async () => {
+      mockInvoke.mockResolvedValue({
+        Payload: Buffer.from(JSON.stringify({ statusCode: 200, body: '{}' })),
+      });
+
+      await invokeLambda('assets', 'testFunction', { pathParameters: {} });
+      await invokeLambda('accounts', 'getAccount', { pathParameters: {} });
+
+      expect(mockLambdaConstructor).toHaveBeenCalledTimes(1);
+      expect(mockInvoke).toHaveBeenCalledTimes(2);
+      expect(mockDestroy).not.toHaveBeenCalled();
     });
   });
 
@@ -270,11 +288,13 @@ describe('invokeLambda', () => {
 
   describe('retry options and signature error handling', () => {
     it('should use caller-provided maxAttempts when retry options are passed', async () => {
+      const customClientDestroy = jest.fn();
       const customClientInvoke = jest.fn().mockResolvedValue({
         Payload: Buffer.from(JSON.stringify({ statusCode: 200, body: '{}' })),
       });
       mockLambdaConstructor.mockImplementationOnce(() => ({
         invoke: customClientInvoke,
+        destroy: customClientDestroy,
       }));
 
       await invokeLambda('assets', 'test', { pathParameters: {} }, undefined, {
@@ -285,9 +305,12 @@ describe('invokeLambda', () => {
       expect(mockLambdaConstructor).toHaveBeenLastCalledWith(
         expect.objectContaining({ maxAttempts: 5 }),
       );
+      expect(customClientDestroy).toHaveBeenCalledTimes(1);
     });
 
-    it('should recreate client and retry once on signature expiry errors', async () => {
+    it('should retry on a one-off client and promote it as shared on signature expiry', async () => {
+      const firstDestroy = jest.fn();
+      const retryDestroy = jest.fn();
       const firstInvoke = jest.fn().mockRejectedValue(
         Object.assign(new Error('Signature expired'), {
           name: 'InvalidSignatureException',
@@ -302,8 +325,14 @@ describe('invokeLambda', () => {
         ),
       });
       mockLambdaConstructor
-        .mockImplementationOnce(() => ({ invoke: firstInvoke }))
-        .mockImplementationOnce(() => ({ invoke: retryInvoke }));
+        .mockImplementationOnce(() => ({
+          invoke: firstInvoke,
+          destroy: firstDestroy,
+        }))
+        .mockImplementationOnce(() => ({
+          invoke: retryInvoke,
+          destroy: retryDestroy,
+        }));
 
       const result = await invokeLambda('assets', 'test', {
         pathParameters: {},
@@ -312,6 +341,16 @@ describe('invokeLambda', () => {
       expect(result).toEqual({ ok: true });
       expect(firstInvoke).toHaveBeenCalledTimes(1);
       expect(retryInvoke).toHaveBeenCalledTimes(1);
+      // Prior shared client must not be destroyed mid-flight (Promise.all-safe).
+      expect(firstDestroy).not.toHaveBeenCalled();
+      // Retry client was promoted to shared; do not destroy it.
+      expect(retryDestroy).not.toHaveBeenCalled();
+      expect(mockLambdaConstructor).toHaveBeenCalledTimes(2);
+
+      // Subsequent default invoke reuses the promoted shared client.
+      await invokeLambda('assets', 'test2', { pathParameters: {} });
+      expect(mockLambdaConstructor).toHaveBeenCalledTimes(2);
+      expect(retryInvoke).toHaveBeenCalledTimes(2);
     });
   });
 });

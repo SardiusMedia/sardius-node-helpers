@@ -46,6 +46,37 @@ interface eventObject {
   body?: keyValuePair;
 }
 
+/** Reused across default (no custom options) invokes in a warm Lambda. */
+let sharedLambdaClient: Lambda | undefined;
+
+function createLambdaClient(options?: LambdaClientConfig): Lambda {
+  return new Lambda({
+    region: process.env.region,
+    ...options,
+  });
+}
+
+function getSharedLambdaClient(): Lambda {
+  if (!sharedLambdaClient) {
+    sharedLambdaClient = createLambdaClient();
+  }
+  return sharedLambdaClient;
+}
+
+function destroyClient(client: Lambda | undefined): void {
+  if (client && typeof client.destroy === 'function') {
+    client.destroy();
+  }
+}
+
+/**
+ * Clears the cached default Lambda client. Intended for unit tests only so
+ * shared-client state does not leak across cases.
+ */
+export function resetSharedLambdaClientForTests(): void {
+  sharedLambdaClient = undefined;
+}
+
 function isClockSignatureError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const err = error as { name?: string; message?: string };
@@ -83,23 +114,38 @@ export default async (
     Payload: Buffer.from(JSON.stringify(event), 'utf8'),
   };
 
-  const createLambdaClient = () =>
-    new Lambda({
-      region: process.env.region,
-      ...options,
-    });
-  const lambda = createLambdaClient();
+  const usesShared = options === undefined;
+  let ownedClient: Lambda | undefined;
+  const lambda = usesShared
+    ? getSharedLambdaClient()
+    : (ownedClient = createLambdaClient(options));
 
   let data;
   try {
-    data = await lambda.invoke(invokeParams);
-  } catch (error) {
-    if (!isClockSignatureError(error)) {
-      throw error;
+    try {
+      data = await lambda.invoke(invokeParams);
+    } catch (error) {
+      if (!isClockSignatureError(error)) {
+        throw error;
+      }
+      // Promise.all-safe: retry on a one-off client. Do not destroy the shared
+      // client while other in-flight invokes may still be using it.
+      const retryClient = createLambdaClient(options);
+      try {
+        data = await retryClient.invoke(invokeParams);
+        if (usesShared) {
+          // Promote fresh client for future calls; leave prior shared alone.
+          sharedLambdaClient = retryClient;
+        } else {
+          destroyClient(retryClient);
+        }
+      } catch (retryError) {
+        destroyClient(retryClient);
+        throw retryError;
+      }
     }
-    // One immediate retry with a fresh client helps when a stale signer/clock
-    // offset exists in a warm Lambda execution environment.
-    data = await createLambdaClient().invoke(invokeParams);
+  } finally {
+    destroyClient(ownedClient);
   }
 
   // Check for Lambda execution errors (unhandled exceptions)

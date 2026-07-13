@@ -54,6 +54,16 @@ details from:
 'Invoke Lambda failed with status 500';
 ```
 
+## Client reuse
+
+- Default invokes (no custom `options`) reuse one module-scoped Lambda client
+  for the life of the warm execution environment. Safe under concurrent
+  `Promise.all` / worker pools.
+- Custom `options` create a one-off client that is `destroy()`ed after the call.
+- On signature/clock skew errors, retries use a short-lived one-off client and
+  promote it to the shared client without destroying the previous shared
+  instance mid-flight (so in-flight concurrent invokes stay valid).
+
 ## Backwards Compatibility
 
 This function maintains backwards compatibility:
@@ -72,3 +82,5 @@ When using this function:
 - The function automatically constructs the Lambda function name from
   environment variables:
   `${process.env.cfstack}-${service}-${process.env.stage}-${functionName}`
+- Unit tests should call `resetSharedLambdaClientForTests()` in `beforeEach`
+  so shared-client state does not leak across cases
