@@ -44,12 +44,13 @@ const mockAccount: any = {
 };
 
 const mockGetAccount = jest.fn(accountId => mockAccount);
-jest.mock('../index', () => ({
+jest.mock('../getAccountPrivate', () => ({
   __esModule: true,
-  getAccountPrivate: jest
-    .fn()
-    .mockImplementation(param1 => mockGetAccount(param1)),
-  getAWSSecrets: jest.fn(),
+  default: jest.fn((param1: string) => mockGetAccount(param1)),
+}));
+jest.mock('../getAWSSecrets', () => ({
+  __esModule: true,
+  default: jest.fn(),
 }));
 
 const mockBBEnvBucket = {
@@ -104,9 +105,18 @@ process.env['sj_assets_secret'] = mockSJEnvBucket.secret;
 process.env['sj_assets_endpoint'] = mockSJEnvBucket.endpointUrl;
 process.env['sj_assets_region'] = mockSJEnvBucket.region;
 
+const clearBucketConfigCache = (accountId: string) => {
+  process.env[`externalProviders_${accountId}`] = '';
+  process.env[`accountBucketDefaults_${accountId}`] = '';
+  process.env[`primaryBucketId_${accountId}`] = '';
+  process.env[`entrypointPrimaryBucketId_${accountId}`] = '';
+  process.env[`entrypointBuckets_${accountId}`] = '';
+  process.env[`limitRaceworkerBuckets_${accountId}`] = '';
+  process.env[`bucketConfigCached_${accountId}`] = '';
+};
+
 afterEach(() => {
-  process.env[`externalProviders_${mockAccount.id}`] = '';
-  process.env[`accountBucketDefaults_${mockAccount.id}`] = '';
+  clearBucketConfigCache(mockAccount.id);
   jest.clearAllMocks();
 });
 
@@ -187,6 +197,7 @@ describe('src/helpers/buckets/getBuckets', () => {
       mockAccount.storage.externalProviders,
     );
     process.env[`accountBucketDefaults_${mockAccount.id}`] = JSON.stringify([]);
+    process.env[`bucketConfigCached_${mockAccount.id}`] = 'true';
     const results = await getBuckets(mockAccount.id, [mockAccountBBBucket.id]);
     expect(mockGetAccount).toHaveBeenCalledTimes(0);
     expect(results).toEqual([mockAccountBBBucket]);
@@ -289,6 +300,7 @@ describe('src/helpers/buckets/getBuckets', () => {
       },
     });
 
+    // Existing accounts: `all` ignores storage.buckets and returns globals + every external
     const results = await getBuckets(mockAccount.id, ['all']);
 
     expect(results).toEqual([
@@ -365,5 +377,37 @@ describe('src/helpers/buckets/getBuckets', () => {
       mockAccountS3Bucket,
       mockAccountS3BucketReadOnly,
     ]);
+  });
+
+  it('should use only storage.buckets for default when configured (existing behavior)', async () => {
+    mockGetAccount.mockReturnValueOnce({
+      id: 'testAccount',
+      storage: {
+        buckets: [{ type: 'external', id: mockAccountS3Bucket.id }],
+        externalProviders: [mockAccountS3Bucket],
+      },
+    });
+
+    const results = await getBuckets(mockAccount.id, ['default']);
+
+    expect(results).toEqual([mockAccountS3Bucket]);
+  });
+
+  it('should not auto-inject globals for all when primaryBucketId is set', async () => {
+    mockGetAccount.mockReturnValueOnce({
+      id: 'testAccount',
+      storage: {
+        primaryBucketId: mockAccountS3Bucket.id,
+        buckets: [
+          { type: 'external', id: mockAccountS3Bucket.id },
+          { type: 'external', id: mockAccountBBBucket.id },
+        ],
+        externalProviders: [mockAccountS3Bucket, mockAccountBBBucket],
+      },
+    });
+
+    const results = await getBuckets(mockAccount.id, ['all']);
+
+    expect(results).toEqual([mockAccountS3Bucket, mockAccountBBBucket]);
   });
 });

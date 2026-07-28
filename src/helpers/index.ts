@@ -5,6 +5,7 @@ import getAccount from './getAccount';
 import getAccountPrivate from './getAccountPrivate';
 import getAWSSecrets from './getAWSSecrets';
 import getBuckets from './buckets/getBuckets';
+import getPrimaryBucket from './buckets/getPrimaryBucket';
 import getStage from './getStage';
 import invokeLambda from './invokeLambda';
 import isTusSourceUrl from './isTusSourceUrl';
@@ -22,6 +23,7 @@ export {
   getAccountPrivate,
   getAWSSecrets,
   getBuckets,
+  getPrimaryBucket,
   getStage,
   invokeLambda,
   isTusSourceUrl,
