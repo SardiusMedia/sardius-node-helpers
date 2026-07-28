@@ -1,7 +1,8 @@
 import { Bucket } from '../../common/tsModels';
 
-import { getAWSSecrets, getAccountPrivate } from '../index';
+import getAWSSecrets from '../getAWSSecrets';
 import validateBucket from './validateBucket';
+import loadAccountBucketConfig from './loadAccountBucketConfig';
 
 const acceptedInternalIds = [
   'bb_assets',
@@ -10,10 +11,7 @@ const acceptedInternalIds = [
   'default',
 ];
 
-interface AccountBuckets {
-  type: 'default' | 'external';
-  id: string;
-}
+const INTERNAL_DEFAULT_BUCKETS = ['sj_assets', 'bb_assets', 'bb_assets-eu'];
 
 interface Options {
   includeReadOnly?: boolean;
@@ -29,43 +27,11 @@ export default async (
     expires: secretExpiresInMinutes * 60 * 1000,
   });
 
-  let externalProviders: Bucket[] = [];
-  let accountBucketDefaults: AccountBuckets[] = [];
-
-  const foundExternalProviders =
-    process.env[`externalProviders_${accountId}`] || '';
-  const foundAccountBucketDefaults =
-    process.env[`accountBucketDefaults_${accountId}`] || '';
-
-  // Check env variables to see if we have a cached version we can use
-  if (foundAccountBucketDefaults && foundExternalProviders) {
-    externalProviders = JSON.parse(foundExternalProviders);
-    accountBucketDefaults = JSON.parse(foundAccountBucketDefaults);
-  } else if (accountId !== 'sardiusAdmin') {
-    // Use the private account endpoint so storage maintenance (sync, desync,
-    // cleanup after asset delete) still works when an account has been
-    // deactivated. getBuckets only needs storage config, not active gating.
-    const account = (await getAccountPrivate(accountId)) as Awaited<
-      ReturnType<typeof getAccountPrivate>
-    > & {
-      storage?: { externalProviders?: Bucket[]; buckets?: AccountBuckets[] };
-    };
-
-    if (account && account.storage && account.storage.externalProviders) {
-      externalProviders = account.storage.externalProviders;
-    }
-
-    if (account && account.storage && account.storage.buckets) {
-      accountBucketDefaults = account.storage.buckets;
-    }
-
-    process.env[`externalProviders_${accountId}`] =
-      JSON.stringify(externalProviders);
-
-    process.env[`accountBucketDefaults_${accountId}`] = JSON.stringify(
-      accountBucketDefaults,
-    );
-  }
+  const {
+    externalProviders,
+    buckets: accountBucketDefaults,
+    primaryBucketId,
+  } = await loadAccountBucketConfig(accountId);
 
   const results: Bucket[] = [];
 
@@ -75,23 +41,33 @@ export default async (
 
   let formattedBuckets: string[] = buckets;
 
+  // `default` has always meant: use storage.buckets when configured, else globals.
+  // Existing accounts with storage.buckets already rely on this.
   if (buckets.indexOf('default') > -1) {
     if (accountBucketDefaults.length > 0) {
       formattedBuckets = accountBucketDefaults
         .map(item => item.id)
         .filter(id => id !== 'lc_assets');
     } else {
-      // System defaults
-      formattedBuckets = ['sj_assets', 'bb_assets', 'bb_assets-eu'];
+      formattedBuckets = [...INTERNAL_DEFAULT_BUCKETS];
     }
   }
 
+  // `all` historically ignored storage.buckets and always returned globals + every
+  // externalProvider. Keep that for existing accounts. Only skip auto-injecting
+  // globals when primaryBucketId is set (createBuckets / migrated accounts).
   if (buckets.indexOf('all') > -1) {
-    formattedBuckets = ['sj_assets', 'bb_assets', 'bb_assets-eu'];
+    if (primaryBucketId && accountBucketDefaults.length > 0) {
+      formattedBuckets = accountBucketDefaults
+        .map(item => item.id)
+        .filter(id => id !== 'lc_assets');
+    } else {
+      formattedBuckets = [...INTERNAL_DEFAULT_BUCKETS];
 
-    externalProviders.forEach(bucket => {
-      formattedBuckets.push(bucket.id);
-    });
+      externalProviders.forEach(bucket => {
+        formattedBuckets.push(bucket.id);
+      });
+    }
   }
 
   formattedBuckets = formattedBuckets.filter(id => id !== 'lc_assets');

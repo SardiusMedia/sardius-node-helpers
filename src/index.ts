@@ -2,7 +2,7 @@ import DynamoWrapper from './Dynamo';
 import * as DynamoWrapperTypes from './Dynamo/index.types';
 import S3Wrapper from './s3';
 
-import { getBuckets, validateBucket } from './helpers';
+import { getBuckets, getPrimaryBucket, validateBucket } from './helpers';
 import getAccount from './helpers/getAccount';
 import getAccountPrivate from './helpers/getAccountPrivate';
 import getAWSSecrets from './helpers/getAWSSecrets';
@@ -19,6 +19,7 @@ export {
   getAccountPrivate,
   getAWSSecrets,
   getBuckets,
+  getPrimaryBucket,
   getStage,
   invokeLambda,
   S3Wrapper,
