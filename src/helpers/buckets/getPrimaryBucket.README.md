@@ -7,5 +7,6 @@ Returns the account's durable storage primary bucket. Used by encode destination
 ## For AI
 
 - Resolution order: `storage.primaryBucketId` → global `sj_assets` (internal Storj).
+- If `primaryBucketId` is set but missing/disabled → **throws** (no silent Storj fallback).
 - Throws if neither resolves to a non-disabled bucket.
 - Relies on `getBuckets` + `loadAccountBucketConfig` env cache.

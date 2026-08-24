@@ -85,4 +85,19 @@ describe('src/helpers/buckets/getPrimaryBucket', () => {
     const result = await getPrimaryBucket(mockAccount.id);
     expect(result).toEqual(mockSJEnvBucket);
   });
+
+  it('should throw when primaryBucketId is set but unresolved', async () => {
+    mockGetAccount.mockReturnValueOnce({
+      id: mockAccount.id,
+      storage: {
+        primaryBucketId: 'missing-managed-bb',
+        externalProviders: [],
+        buckets: [{ type: 'external', id: 'missing-managed-bb' }],
+      },
+    });
+
+    await expect(getPrimaryBucket(mockAccount.id)).rejects.toThrow(
+      /primaryBucketId missing-managed-bb is set/,
+    );
+  });
 });
