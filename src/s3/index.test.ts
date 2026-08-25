@@ -131,4 +131,30 @@ describe('s3/S3Wrapper', () => {
       /accessKeyId is required to use the s3 class/,
     );
   });
+
+  it('normalizes host-only and full-URL endpoints without doubling https', () => {
+    new S3Wrapper({
+      accessKeyId: 'a',
+      secretAccessKey: 'b',
+      bucket: 'my-bucket',
+      endpoint: 's3.us-east-005.backblazeb2.com',
+      region: 'us-east-005',
+    });
+    expect(mockS3ClientCtor.mock.calls[0][0].endpoint).toBe(
+      'https://s3.us-east-005.backblazeb2.com',
+    );
+
+    mockS3ClientCtor.mockClear();
+
+    new S3Wrapper({
+      accessKeyId: 'a',
+      secretAccessKey: 'b',
+      bucket: 'my-bucket',
+      endpoint: 'https://s3.us-east-005.backblazeb2.com/',
+      region: 'us-east-005',
+    });
+    expect(mockS3ClientCtor.mock.calls[0][0].endpoint).toBe(
+      'https://s3.us-east-005.backblazeb2.com',
+    );
+  });
 });

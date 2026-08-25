@@ -93,7 +93,12 @@ export default class {
     }
 
     if (endpoint) {
-      config.endpoint = `https://${endpoint}`;
+      // Host-only (secrets) or full URL (managed/BYO) — never double https://
+      const host = endpoint
+        .trim()
+        .replace(/\/+$/, '')
+        .replace(/^https?:\/\//i, '');
+      config.endpoint = `https://${host}`;
     }
 
     if (accessKeyId && secretAccessKey) {
