@@ -17,4 +17,6 @@ export default interface Bucket {
   enforceLifecycle?: boolean;
   managedBySardius?: boolean;
   excludeFromEntrypoint?: boolean;
+  /** B2-style visibility; `allPrivate` → Bitmovin PRIVATE object ACL. */
+  bucketType?: 'allPrivate' | 'allPublic';
 }
